@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OSRS Planner — Bazathril</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<link href="https://db.onlinewebfonts.com/c/4c8754090a7936fac2f8c5f3043db9ee?family=RuneScape+UF+Regular" rel="stylesheet">
 <style>
   :root {
     --gold: #c9a84c;
@@ -35,10 +35,11 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Crimson Pro', Georgia, serif;
+    font-family: 'RuneScape UF Regular', serif;
     min-height: 100vh;
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: 17px;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
   }
 
   /* Parchment texture overlay */
@@ -68,7 +69,7 @@
   }
 
   .header-left h1 {
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     font-size: 28px;
     font-weight: 700;
     color: var(--gold);
@@ -93,7 +94,7 @@
     text-align: right;
   }
 
-  .char-badge strong { color: var(--gold); font-family: 'Cinzel', serif; font-size: 15px; display: block; }
+  .char-badge strong { color: var(--gold); font-family: 'RuneScape UF Regular', serif; font-size: 15px; display: block; }
 
   /* ── File loader ── */
   .loader-section {
@@ -105,7 +106,7 @@
   }
 
   .loader-section h2 {
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     font-size: 14px;
     color: var(--gold-dim);
     letter-spacing: .1em;
@@ -136,7 +137,7 @@
   .file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
   .file-drop .drop-icon { font-size: 20px; margin-bottom: 4px; }
-  .file-drop .drop-label { font-size: 12px; color: var(--text-dim); font-family: 'Cinzel', serif; letter-spacing: .05em; }
+  .file-drop .drop-label { font-size: 12px; color: var(--text-dim); font-family: 'RuneScape UF Regular', serif; letter-spacing: .05em; }
   .file-drop .drop-status { font-size: 11px; margin-top: 4px; color: var(--text-muted); }
   .file-drop.loaded .drop-status { color: var(--green-light); }
 
@@ -146,7 +147,7 @@
     border: none;
     border-radius: 6px;
     padding: 10px 28px;
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     font-size: 13px;
     font-weight: 600;
     letter-spacing: .08em;
@@ -182,7 +183,7 @@
 
   .stat-pill .skill-icon { font-size: 14px; }
   .stat-pill .skill-name { color: var(--text-dim); font-size: 12px; }
-  .stat-pill .skill-level { color: var(--gold); font-weight: 600; font-family: 'Cinzel', serif; }
+  .stat-pill .skill-level { color: var(--gold); font-weight: 600; font-family: 'RuneScape UF Regular', serif; }
   .stat-pill.maxed { border-color: var(--gold-dim); background: rgba(201,168,76,0.06); }
 
   /* ── Filters ── */
@@ -194,7 +195,7 @@
     align-items: center;
   }
 
-  .filter-label { font-size: 12px; color: var(--text-muted); font-family: 'Cinzel', serif; letter-spacing: .08em; margin-right: 4px; }
+  .filter-label { font-size: 12px; color: var(--text-muted); font-family: 'RuneScape UF Regular', serif; letter-spacing: .08em; margin-right: 4px; }
 
   .filter-btn {
     background: var(--bg3);
@@ -203,7 +204,7 @@
     border-radius: 20px;
     padding: 5px 14px;
     font-size: 12px;
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     letter-spacing: .05em;
     cursor: pointer;
     transition: all .2s;
@@ -214,7 +215,7 @@
 
   /* ── Activity grid ── */
   .section-heading {
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     font-size: 11px;
     letter-spacing: .15em;
     text-transform: uppercase;
@@ -285,7 +286,7 @@
   }
 
   .card-title {
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     font-size: 14px;
     font-weight: 600;
     color: var(--text);
@@ -302,7 +303,7 @@
 
   .card-badge {
     font-size: 11px;
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     letter-spacing: .05em;
     padding: 3px 10px;
     border-radius: 12px;
@@ -349,7 +350,7 @@
   }
 
   .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
-  .empty-state h3 { font-family: 'Cinzel', serif; color: var(--text-dim); margin-bottom: 8px; }
+  .empty-state h3 { font-family: 'RuneScape UF Regular', serif; color: var(--text-dim); margin-bottom: 8px; }
   .empty-state p { font-size: 14px; }
 
   /* ── Summary bar ── */
@@ -367,7 +368,7 @@
   }
 
   .summary-stat .s-num {
-    font-family: 'Cinzel', serif;
+    font-family: 'RuneScape UF Regular', serif;
     font-size: 28px;
     font-weight: 700;
     line-height: 1;
@@ -385,6 +386,68 @@
   .s-num.red { color: var(--red-light); }
 
   #main-content { display: none; }
+
+  /* ── Folder picker ── */
+  .folder-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg2);
+    border: 2px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 36px 20px;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .folder-drop:hover { border-color: var(--gold); background: var(--bg4); }
+  .folder-drop.loaded { border-color: var(--green); border-style: solid; }
+  .folder-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .folder-icon { font-size: 40px; margin-bottom: 10px; }
+  .folder-label { font-family: 'RuneScape UF Regular', serif; font-size: 15px; color: var(--text); letter-spacing: .05em; }
+  .folder-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  /* ── File status grid ── */
+  .file-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .fsg-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: all .2s;
+  }
+
+  .fsg-item.loaded { color: var(--text); border-color: var(--green); }
+  .fsg-item.loaded .fsg-badge { background: var(--green-bg); color: var(--green-light); border-color: var(--green); }
+
+  .fsg-badge {
+    font-size: 10px;
+    font-family: 'RuneScape UF Regular', serif;
+    letter-spacing: .05em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .fsg-badge.required { background: var(--amber-bg); color: var(--amber-light); border-color: var(--amber); }
+  .fsg-badge.optional { background: var(--bg3); color: var(--text-muted); border-color: var(--border); }
 </style>
 </head>
 <body>
@@ -403,49 +466,28 @@
 
   <!-- File Loader -->
   <div class="loader-section" id="loader-section">
-    <h2>Load Character Export Files</h2>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-      From RuneLite → Character Export plugin → Open the export folder and drag files below.
-      Only <em style="color:var(--text-dim)">character.json</em> and <em style="color:var(--text-dim)">quests.json</em> are required. Bank, diaries and equipment improve results.
+    <h2>Load Character Export Folder</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+      Select your RuneLite character export folder in one click.<br>
+      <em style="color:var(--text-dim)">RuneLite → Character Export → Open Folder</em> — then point the picker at it below.
     </p>
-    <div class="file-grid">
-      <label class="file-drop" id="drop-character">
-        <input type="file" accept=".json" onchange="loadFile('character', this)">
-        <div class="drop-icon">⚔️</div>
-        <div class="drop-label">character.json</div>
-        <div class="drop-status" id="status-character">Required</div>
-      </label>
-      <label class="file-drop" id="drop-quests">
-        <input type="file" accept=".json" onchange="loadFile('quests', this)">
-        <div class="drop-icon">📜</div>
-        <div class="drop-label">quests.json</div>
-        <div class="drop-status" id="status-quests">Required</div>
-      </label>
-      <label class="file-drop" id="drop-diaries">
-        <input type="file" accept=".json" onchange="loadFile('diaries', this)">
-        <div class="drop-icon">📖</div>
-        <div class="drop-label">diaries.json</div>
-        <div class="drop-status" id="status-diaries">Optional</div>
-      </label>
-      <label class="file-drop" id="drop-bank">
-        <input type="file" accept=".json" onchange="loadFile('bank', this)">
-        <div class="drop-icon">🏦</div>
-        <div class="drop-label">bank.json</div>
-        <div class="drop-status" id="status-bank">Optional</div>
-      </label>
-      <label class="file-drop" id="drop-equipment">
-        <input type="file" accept=".json" onchange="loadFile('equipment', this)">
-        <div class="drop-icon">🛡️</div>
-        <div class="drop-label">equipment.json</div>
-        <div class="drop-status" id="status-equipment">Optional</div>
-      </label>
-      <label class="file-drop" id="drop-combat">
-        <input type="file" accept=".json" onchange="loadFile('combat', this)">
-        <div class="drop-icon">🗡️</div>
-        <div class="drop-label">combat_achievements.json</div>
-        <div class="drop-status" id="status-combat">Optional</div>
-      </label>
+
+    <label class="folder-drop" id="folder-drop">
+      <input type="file" id="folder-input" webkitdirectory multiple accept=".json" onchange="loadFolder(this)">
+      <div class="folder-icon">📁</div>
+      <div class="folder-label">Click to select export folder</div>
+      <div class="folder-sub">Reads all JSON files automatically</div>
+    </label>
+
+    <div class="file-status-grid" id="file-status-grid">
+      <div class="fsg-item" id="fsg-character">⚔️ character.json <span class="fsg-badge required">Required</span></div>
+      <div class="fsg-item" id="fsg-quests">📜 quests.json <span class="fsg-badge required">Required</span></div>
+      <div class="fsg-item" id="fsg-diaries">📖 diaries.json <span class="fsg-badge optional">Optional</span></div>
+      <div class="fsg-item" id="fsg-bank">🏦 bank.json <span class="fsg-badge optional">Optional</span></div>
+      <div class="fsg-item" id="fsg-equipment">🛡️ equipment.json <span class="fsg-badge optional">Optional</span></div>
+      <div class="fsg-item" id="fsg-combat">🗡️ combat_achievements.json <span class="fsg-badge optional">Optional</span></div>
     </div>
+
     <button class="load-btn" id="analyse-btn" onclick="runAnalysis()" disabled>Analyse Character</button>
   </div>
 
@@ -496,21 +538,50 @@ let currentFilter = 'all';
 let currentCat = 'all';
 
 // ─── File loading ─────────────────────────────────────────────────────────────
-function loadFile(key, input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      state[key] = JSON.parse(e.target.result);
-      document.getElementById('drop-' + key).classList.add('loaded');
-      document.getElementById('status-' + key).textContent = '✓ Loaded';
-      checkReady();
-    } catch(err) {
-      document.getElementById('status-' + key).textContent = '✗ Invalid JSON';
-    }
-  };
-  reader.readAsText(file);
+const FILE_MAP = {
+  'character': 'character',
+  'quests': 'quests',
+  'diaries': 'diaries',
+  'bank': 'bank',
+  'equipment': 'equipment',
+  'combat_achievements': 'combat',
+  'inventory': null,      // loaded but not used yet
+  'seed_vault': null,
+};
+
+function loadFolder(input) {
+  const files = Array.from(input.files).filter(f => f.name.endsWith('.json'));
+  if (!files.length) return;
+
+  // Mark folder as selected
+  document.getElementById('folder-drop').classList.add('loaded');
+  document.querySelector('.folder-label').textContent = `${files.length} files found`;
+
+  let loaded = 0;
+  files.forEach(file => {
+    // Match filename (strip timestamps like _2026-01-01_12-00-00)
+    const baseName = file.name.replace(/\.json$/, '').replace(/_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/, '');
+    const stateKey = FILE_MAP[baseName];
+    if (stateKey === undefined) return; // unknown file, skip
+    if (stateKey === null) return;      // known but not used yet
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        state[stateKey] = JSON.parse(e.target.result);
+        const el = document.getElementById('fsg-' + stateKey);
+        if (el) {
+          el.classList.add('loaded');
+          el.querySelector('.fsg-badge').textContent = '✓ Loaded';
+        }
+        loaded++;
+        checkReady();
+      } catch(err) {
+        console.warn('Failed to parse', file.name, err);
+      }
+    };
+    reader.readAsText(file);
+  });
 }
 
 function checkReady() {
