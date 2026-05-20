@@ -268,6 +268,11 @@
   .activity-card.milestone-card.unlocked::before { background: var(--gold); }
   .activity-card.milestone-card .card-category { color: var(--gold-dim); }
 
+  .activity-card.completed { border-color: rgba(201,168,76,0.4); opacity: .65; }
+  .activity-card.completed::before { background: var(--gold); }
+  .activity-card.completed .card-title { color: var(--text-dim); }
+  .badge-completed { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid var(--gold-dim); }
+
   .activity-card:hover { transform: translateY(-1px); border-color: var(--border-strong); }
   .activity-card.unlocked:hover { border-color: rgba(74,140,92,0.7); }
   .activity-card.close:hover { border-color: rgba(184,124,42,0.7); }
@@ -460,6 +465,7 @@
       <button class="filter-btn" onclick="setFilter('unlocked', this)">Unlocked</button>
       <button class="filter-btn" onclick="setFilter('close', this)">Almost there</button>
       <button class="filter-btn" onclick="setFilter('locked', this)">Locked</button>
+      <button class="filter-btn" onclick="setFilter('completed', this)">✓ Completed</button>
       <span class="filter-label" style="margin-left:12px">Category:</span>
       <button class="filter-btn active" onclick="setCat('all', this)">All</button>
       <button class="filter-btn" onclick="setCat('bossing', this)">Bossing</button>
@@ -862,6 +868,7 @@ function getActivities() {
       name: 'Quest Cape',
       category: 'milestone',
       note: 'Unlocks Duradel as Slayer master. One of the most impactful Ironman achievements.',
+      completed: () => questCape,
       reqs: () => [
         reqOther(`All quests complete (${questCount()}/295 finished)`, questCape),
       ]
@@ -871,6 +878,7 @@ function getActivities() {
       name: 'Fire Cape',
       category: 'milestone',
       note: 'Best-in-slot melee cape until Infernal. Required for Inferno attempt.',
+      completed: () => hasItem('Fire cape') || hasItem('Infernal cape'),
       reqs: () => [
         reqStat('Ranged', 70),
         reqStat('Prayer', 43),
@@ -883,6 +891,7 @@ function getActivities() {
       name: 'Barrows Gloves',
       category: 'milestone',
       note: 'Best-in-slot gloves. Requires Recipe for Disaster (all subquests).',
+      completed: () => hasItem('Barrows gloves'),
       reqs: () => [
         reqOther('Recipe for Disaster (all subquests)', hasQuest('Recipe for Disaster')),
         reqStat('Cooking', 70),
@@ -902,6 +911,7 @@ function getActivities() {
       name: 'Amulet of Fury',
       category: 'milestone',
       note: 'Best-in-slot amulet until Torture. Requires Onyx from TzHaar shop or drop. You have 4 Blood Shards banked for later.',
+      completed: () => hasItem('Amulet of fury') || hasItem('Amulet of torture'),
       reqs: () => [
         reqStat('Crafting', 87),
         reqOther('Onyx gemstone obtained', hasItem('Onyx') || hasItem('Uncut onyx')),
@@ -912,6 +922,7 @@ function getActivities() {
       name: 'Berserker Ring (i)',
       category: 'milestone',
       note: 'Best-in-slot melee ring. From Dagannoth Rex. Imbue via NMZ.',
+      completed: () => hasItem('Berserker ring (i)') || hasItem('Berserker ring'),
       reqs: () => [
         reqStat('Slayer', 1),
         reqOther('Dagannoth Kings accessible', hasQuest('Waterbirth Island') || true),
@@ -923,6 +934,7 @@ function getActivities() {
       name: 'Dragon Defender',
       category: 'milestone',
       note: 'Best-in-slot off-hand until Crystal Shield / Avernic. Warrior Guild tokens needed.',
+      completed: () => hasItem('Dragon defender') || hasItem('Avernic defender'),
       reqs: () => [
         reqStat('Attack', 60),
         reqStat('Defence', 60),
@@ -934,6 +946,7 @@ function getActivities() {
       name: 'Salve Amulet (ei)',
       category: 'milestone',
       note: 'Best-in-slot for undead. Imbue via Nightmare Zone after obtaining base Salve.',
+      completed: () => hasItem('Salve amulet(ei)') || hasItem('Salve amulet(i)'),
       reqs: () => [
         reqOther('Quest: Haunted Mine', hasQuest('Haunted Mine')),
         reqOther('Salve amulet or (e) in bank/equipped', hasItem('Salve amulet')),
@@ -944,6 +957,7 @@ function getActivities() {
       name: 'Slayer Helmet (i)',
       category: 'milestone',
       note: 'Huge on-task damage boost for melee, ranged and magic. Core Ironman item.',
+      completed: () => hasItem('Slayer helmet (i)') || hasItem('Slayer helmet(i)'),
       reqs: () => [
         reqStat('Slayer', 55),
         reqOther('Slayer helmet assembled', hasItem('Slayer helmet') || hasItem('Black mask')),
@@ -955,6 +969,7 @@ function getActivities() {
       name: 'Infernal Cape',
       category: 'milestone',
       note: 'Best-in-slot melee cape. Extremely difficult. Fire Cape is the prerequisite.',
+      completed: () => hasItem('Infernal cape'),
       reqs: () => [
         reqStat('Ranged', 80),
         reqStat('Prayer', 77),
@@ -968,6 +983,7 @@ function getActivities() {
       name: 'Fighter Torso',
       category: 'milestone',
       note: '+4 Strength bonus. Best-in-slot chest for melee until Bandos/Justiciar.',
+      completed: () => hasItem('Fighter torso'),
       reqs: () => [
         reqStat('Defence', 40),
         reqOther('Barbarian Assault waves completed', false),
@@ -978,6 +994,7 @@ function getActivities() {
       name: 'Void Knight Set',
       category: 'milestone',
       note: 'Excellent ranged gear for mid-game Ironman. Pest Control points.',
+      completed: () => hasItem('Void knight top') || hasItem('Void melee helm'),
       reqs: () => [
         reqStat('Attack', 42),
         reqStat('Strength', 42),
@@ -994,6 +1011,7 @@ function getActivities() {
       name: 'Zenyte Jewellery',
       category: 'milestone',
       note: 'Torture / Anguish / Torment amulets. From Demonic Gorillas via Zenyte shards.',
+      completed: () => hasItem('Amulet of torture') || hasItem('Necklace of anguish') || hasItem('Tormented bracelet'),
       reqs: () => [
         reqStat('Crafting', 89),
         reqOther('Quest: Monkey Madness II', hasQuest('Monkey Madness II')),
@@ -1005,6 +1023,7 @@ function getActivities() {
       name: 'Max Cape',
       category: 'milestone',
       note: 'All 99s. The ultimate Ironman flex. Combines with Infernal for Max Infernal.',
+      completed: () => Object.values(state.character?.stats || {}).every(s => s.real_level >= 99),
       reqs: () => {
         const stats = state.character?.stats || {};
         return Object.entries(stats).map(([skill, data]) =>
@@ -1017,6 +1036,11 @@ function getActivities() {
 
 // ─── Analysis engine ──────────────────────────────────────────────────────────
 function evaluateActivity(activity) {
+  // Milestones with a completed() check take priority
+  if (activity.completed && activity.completed()) {
+    return { ...activity, reqs: activity.reqs(), status: 'completed' };
+  }
+
   const reqs = activity.reqs();
   const allMet = reqs.every(r => r.status === 'met');
   const anyUnmet = reqs.some(r => r.status === 'unmet');
@@ -1081,7 +1105,7 @@ function setFilter(f, btn) {
 function setCat(c, btn) {
   currentCat = c;
   document.querySelectorAll('.filters .filter-btn').forEach(b => {
-    if (['all','bossing','slayer','skilling','diary','poh'].some(x => b.textContent.toLowerCase() === x)) {
+    if (['all','bossing','slayer','skilling','diary','poh','⭐ milestones'].some(x => b.textContent.toLowerCase() === x)) {
       b.classList.remove('active');
     }
   });
@@ -1099,8 +1123,8 @@ function renderCards() {
     return true;
   });
 
-  // Sort: unlocked first, then close, then locked
-  const order = { unlocked: 0, close: 1, locked: 2 };
+  // Sort: unlocked first, then close, then locked, completed last
+  const order = { unlocked: 0, close: 1, locked: 2, completed: 3 };
   filtered.sort((a, b) => order[a.status] - order[b.status]);
 
   // Summary
@@ -1108,11 +1132,13 @@ function renderCards() {
   const unlocked = activities.filter(a => a.status === 'unlocked').length;
   const close = activities.filter(a => a.status === 'close').length;
   const locked = activities.filter(a => a.status === 'locked').length;
+  const completed = activities.filter(a => a.status === 'completed').length;
 
   document.getElementById('summary-bar').innerHTML = `
     <div class="summary-stat"><span class="s-num green">${unlocked}</span><span class="s-label">Unlocked</span></div>
     <div class="summary-stat"><span class="s-num amber">${close}</span><span class="s-label">Almost there</span></div>
     <div class="summary-stat"><span class="s-num red">${locked}</span><span class="s-label">Locked</span></div>
+    <div class="summary-stat"><span class="s-num" style="color:var(--gold)">${completed}</span><span class="s-label">Completed</span></div>
     <div class="summary-stat"><span class="s-num" style="color:var(--text-dim)">${total}</span><span class="s-label">Total tracked</span></div>
   `;
 
@@ -1133,6 +1159,7 @@ function renderCards() {
     { key: 'unlocked', label: 'Ready to do now', items: filtered.filter(a => a.status === 'unlocked') },
     { key: 'close', label: 'Almost there', items: filtered.filter(a => a.status === 'close') },
     { key: 'locked', label: 'Locked', items: filtered.filter(a => a.status === 'locked') },
+    { key: 'completed', label: '✓ Completed', items: filtered.filter(a => a.status === 'completed') },
   ].filter(g => g.items.length > 0);
 
   container.innerHTML = groups.map(group => `
@@ -1148,6 +1175,7 @@ function renderCard(activity) {
     unlocked: '<span class="card-badge badge-unlocked">Ready</span>',
     close: '<span class="card-badge badge-close">Almost</span>',
     locked: '<span class="card-badge badge-locked">Locked</span>',
+    completed: '<span class="card-badge badge-completed">✓ Done</span>',
   };
 
   const reqIcons = { met: 'met-icon', unmet: 'unmet-icon', close: 'close-icon' };
