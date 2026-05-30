@@ -1428,9 +1428,16 @@ const KEY_ITEMS = [
 
 // OSRS wiki Special:FilePath redirects to the current image regardless of internal
 // hash path — more reliable for hotlinking than the raw /images/ path.
+// Wiki inventory icons live at /images/<Name>.png with spaces as underscores and
+// only the first letter capitalised (e.g. Dragon_scimitar.png). This direct path
+// is what actually resolves cross-origin; Special:FilePath is kept as a fallback.
 function wikiIcon(itemName) {
-  const file = itemName.charAt(0).toUpperCase() + itemName.slice(1);
-  return 'https://oldschool.runescape.wiki/w/Special:FilePath/' + encodeURIComponent(file) + '.png';
+  const norm = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+  return 'https://oldschool.runescape.wiki/images/' + norm.replace(/ /g, '_') + '.png';
+}
+function wikiIconFallback(itemName) {
+  const norm = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+  return 'https://oldschool.runescape.wiki/w/Special:FilePath/' + encodeURIComponent(norm) + '.png';
 }
 
 function ownsKeyItem(item) {
@@ -1453,13 +1460,15 @@ function renderKeyItems() {
   grid.innerHTML = KEY_ITEMS.map(item => {
     const have = ownsKeyItem(item);
     if (have) owned++;
-    const icon = wikiIcon(item.img || item.name);
-    // onerror: hide the broken image and reveal the text fallback so a wrong
-    // wiki name degrades to a labelled square instead of a broken-image glyph.
+    const iconName = item.img || item.name;
+    const icon = wikiIcon(iconName);
+    const fallbackIcon = wikiIconFallback(iconName);
+    // Two-stage onerror: try /images/ first, then Special:FilePath, then text label.
     return `
       <div class="ki-cell ${have ? 'owned' : ''}">
         <img src="${icon}" alt="${item.name}"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+             data-fallback="${fallbackIcon}"
+             onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback');}else{this.style.display='none';this.nextElementSibling.style.display='block';}">
         <div class="ki-fallback" style="display:none">${item.name}</div>
         <div class="ki-tip">
           <span class="ki-tip-name">${item.name}</span>
