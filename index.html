@@ -186,7 +186,8 @@
     font-size: 13px;
   }
 
-  .stat-pill .skill-icon { font-size: 14px; }
+  .stat-pill .skill-icon { font-size: 14px; display: inline-flex; align-items: center; }
+  .stat-pill .skill-icon-img { width: 16px; height: 16px; object-fit: contain; image-rendering: pixelated; vertical-align: middle; }
   .stat-pill .skill-name { color: var(--text-dim); font-size: 12px; }
   .stat-pill .skill-level { color: var(--gold); font-weight: 600; font-family: 'RuneScape UF Regular', serif; }
   .stat-pill.maxed { border-color: var(--gold-dim); background: rgba(201,168,76,0.06); }
@@ -217,6 +218,83 @@
 
   .filter-btn:hover { border-color: var(--gold-dim); color: var(--text); }
   .filter-btn.active { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
+
+  /* ── View nav ── */
+  .view-nav { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  .view-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'RuneScape UF Regular', serif;
+    font-size: 14px;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .view-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+  .view-btn.active { border-color: var(--gold); background: rgba(201,168,76,0.12); color: var(--gold); }
+
+  /* ── Key Items grid ── */
+  .ki-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .ki-title { font-family: 'RuneScape UF Regular', serif; font-size: 18px; color: var(--gold); letter-spacing: .04em; }
+  .ki-count { font-family: 'RuneScape UF Regular', serif; font-size: 18px; color: var(--green-light); }
+  .ki-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-style: italic; }
+
+  .ki-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    max-width: 560px;
+  }
+  .ki-cell {
+    aspect-ratio: 1 / 1;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    position: relative;
+    padding: 6px;
+    transition: all .15s;
+    cursor: default;
+  }
+  .ki-cell:hover { transform: translateY(-2px); border-color: var(--border-strong); z-index: 5; }
+  .ki-cell.owned { border-color: var(--green); box-shadow: inset 0 0 14px rgba(74,140,92,0.22); background: rgba(74,140,92,0.05); }
+
+  .ki-cell img { width: 70%; height: 70%; object-fit: contain; image-rendering: pixelated; }
+  .ki-cell:not(.owned) img { filter: grayscale(1) brightness(0.5); opacity: .35; }
+
+  /* fallback label shown when the icon fails to load */
+  .ki-fallback { font-size: 10px; line-height: 1.2; color: var(--text-muted); text-align: center; word-break: break-word; }
+  .ki-cell.owned .ki-fallback { color: var(--green-light); }
+
+  /* hover tooltip */
+  .ki-cell .ki-tip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 6px 10px;
+    width: max-content;
+    max-width: 180px;
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+    z-index: 10;
+  }
+  .ki-cell .ki-tip .ki-tip-name { color: var(--gold); display: block; margin-bottom: 2px; }
+  .ki-cell .ki-tip .ki-tip-src { color: var(--text-dim); font-size: 11px; }
+  .ki-cell:hover .ki-tip { opacity: 1; }
 
   /* ── Activity grid ── */
   .section-heading {
@@ -503,31 +581,52 @@
   <!-- Main content (shown after analysis) -->
   <div id="main-content">
 
-    <!-- Stats bar -->
+    <!-- Stats bar (shown in both views) -->
     <div class="stats-bar" id="stats-bar"></div>
 
-    <!-- Summary -->
-    <div class="summary-bar" id="summary-bar"></div>
-
-    <!-- Filters -->
-    <div class="filters">
-      <span class="filter-label">Show:</span>
-      <button class="filter-btn active" data-group="filter" onclick="setFilter('all', this)">All</button>
-      <button class="filter-btn" data-group="filter" onclick="setFilter('unlocked', this)">Unlocked</button>
-      <button class="filter-btn" data-group="filter" onclick="setFilter('close', this)">Almost there</button>
-      <button class="filter-btn" data-group="filter" onclick="setFilter('locked', this)">Locked</button>
-      <button class="filter-btn" data-group="filter" onclick="setFilter('completed', this)">✓ Completed</button>
-      <span class="filter-label" style="margin-left:12px">Category:</span>
-      <button class="filter-btn active" data-group="cat" onclick="setCat('all', this)">All</button>
-      <button class="filter-btn" data-group="cat" onclick="setCat('bossing', this)">Bossing</button>
-      <button class="filter-btn" data-group="cat" onclick="setCat('slayer', this)">Slayer</button>
-      <button class="filter-btn" data-group="cat" onclick="setCat('skilling', this)">Skilling</button>
-      <button class="filter-btn" data-group="cat" onclick="setCat('diary', this)">Diaries</button>
-      <button class="filter-btn" data-group="cat" onclick="setCat('poh', this)">PoH</button>
-      <button class="filter-btn" data-group="cat" onclick="setCat('milestone', this)">⭐ Milestones</button>
+    <!-- View nav -->
+    <div class="view-nav">
+      <button class="view-btn active" data-view="planner" onclick="switchView('planner', this)">📋 Planner</button>
+      <button class="view-btn" data-view="keyitems" onclick="switchView('keyitems', this)">🎒 Key Items</button>
     </div>
 
-    <div id="cards-container"></div>
+    <!-- ── Planner view ── -->
+    <div id="view-planner">
+
+      <!-- Summary -->
+      <div class="summary-bar" id="summary-bar"></div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <span class="filter-label">Show:</span>
+        <button class="filter-btn active" data-group="filter" onclick="setFilter('all', this)">All</button>
+        <button class="filter-btn" data-group="filter" onclick="setFilter('unlocked', this)">Unlocked</button>
+        <button class="filter-btn" data-group="filter" onclick="setFilter('close', this)">Almost there</button>
+        <button class="filter-btn" data-group="filter" onclick="setFilter('locked', this)">Locked</button>
+        <button class="filter-btn" data-group="filter" onclick="setFilter('completed', this)">✓ Completed</button>
+        <span class="filter-label" style="margin-left:12px">Category:</span>
+        <button class="filter-btn active" data-group="cat" onclick="setCat('all', this)">All</button>
+        <button class="filter-btn" data-group="cat" onclick="setCat('bossing', this)">Bossing</button>
+        <button class="filter-btn" data-group="cat" onclick="setCat('slayer', this)">Slayer</button>
+        <button class="filter-btn" data-group="cat" onclick="setCat('skilling', this)">Skilling</button>
+        <button class="filter-btn" data-group="cat" onclick="setCat('diary', this)">Diaries</button>
+        <button class="filter-btn" data-group="cat" onclick="setCat('poh', this)">PoH</button>
+        <button class="filter-btn" data-group="cat" onclick="setCat('milestone', this)">⭐ Milestones</button>
+      </div>
+
+      <div id="cards-container"></div>
+
+    </div>
+
+    <!-- ── Key Items view ── -->
+    <div id="view-keyitems" style="display:none">
+      <div class="ki-header">
+        <h2 class="ki-title">Key Items</h2>
+        <span class="ki-count" id="ki-count">— / —</span>
+      </div>
+      <p class="ki-sub">Ironman progression chase items. Greyed = not yet obtained; full colour = in bank or equipped. Hover for how to get it.</p>
+      <div class="ki-grid" id="ki-grid"></div>
+    </div>
 
   </div>
 </div>
@@ -1285,23 +1384,130 @@ function runAnalysis() {
 
   renderStats();
   renderCards();
+  renderKeyItems();
+}
+
+// ─── Key Items (bank-tab progression tracker) ────────────────────────────────
+// `name`     = display + wiki image lookup (must match in-game spelling).
+// `match`    = optional substring used for ownership (defaults to name); forgiving
+//              so charged/uncharged variants still register.
+// `matchAll` = array of substrings; owned only if ALL are present (for sets).
+// `img`      = optional override when the display name != wiki image filename.
+// `src`      = how to obtain (tooltip).
+const KEY_ITEMS = [
+  { name: 'Fire cape',            src: 'TzHaar Fight Cave' },
+  { name: 'Barrows gloves',       src: 'Recipe for Disaster' },
+  { name: 'Quest point cape',     src: 'All quests complete', match: 'Quest point cape' },
+  { name: 'Rune pouch',           src: 'Slayer / LMS / Wintertodt', match: 'Rune pouch' },
+  { name: 'Divine rune pouch',    src: 'Upgrade w/ divine elements', match: 'Divine rune pouch' },
+  { name: "Ava's accumulator",    src: 'Animal Magnetism' },
+  { name: "Ava's assembler",      src: 'Vorkath head + accumulator' },
+  { name: 'Berserker ring (i)',   src: 'Dagannoth Rex + imbue', match: 'erserker ring (i)' },
+  { name: 'Salve amulet(ei)',     src: 'Haunted Mine + Tarn diary + imbue', match: 'Salve amulet(ei)' },
+  { name: 'Amulet of glory',      src: 'Edgeville lvl-3 / Heroes Quest', match: 'mulet of glory' },
+  { name: 'Elite void (set)',     src: 'Pest Control', img: 'Elite void top',
+    matchAll: ['Elite void top', 'Elite void robe', 'Void knight gloves', 'Void melee helm'] },
+  { name: 'Toxic blowpipe',       src: 'Zulrah', img: 'Toxic blowpipe', match: 'blowpipe' },
+  { name: 'Bow of faerdhinen',    src: 'Corrupted Gauntlet (seed)', img: 'Bow of faerdhinen (c)', match: 'aerdhinen' },
+  { name: 'Rune crossbow',        src: 'Fletch / Armadyl crossbow path', match: 'Rune crossbow' },
+  { name: 'Dragon scimitar',      src: 'Monkey Madness I' },
+  { name: 'Dragon defender',      src: "Warriors' Guild" },
+  { name: 'Abyssal whip',         src: 'Abyssal demons (85 Slayer)' },
+  { name: 'Arkan blade',          src: 'The Final Dawn (quest)' },
+  { name: 'Zombie axe',           src: 'Armoured zombies (broken axe)' },
+  { name: 'Warped sceptre',       src: 'Warped creatures (56 Slayer)', match: 'Warped sceptre' },
+  { name: 'Dragon boots',         src: 'Spiritual mages' },
+  { name: 'Trident of the seas',  src: 'Cave krakens / Kraken boss', match: 'rident of the seas' },
+  { name: 'Dragon axe',           src: 'Dagannoth Kings / WC guild' },
+  { name: 'Dragon pickaxe',       src: "Calvar'ion (~1/358)" },
+  // Collection-log completion, NOT a single bank item — see note. Detected only if
+  // every Perilous Moons unique is currently in the bank/equipment (a weak proxy).
+  { name: 'Moons of Peril (log)', src: 'Perilous Moons — full collection log', img: 'Dual macuahuitl',
+    matchAll: ['Blood moon helm','Blood moon chestplate','Blood moon tassets','Blue moon helm','Blue moon chestplate','Blue moon tassets','Eclipse moon helm','Eclipse moon chestplate','Eclipse moon tassets','Dual macuahuitl','Blue moon spear','Eclipse atlatl'] },
+];
+
+// OSRS wiki Special:FilePath redirects to the current image regardless of internal
+// hash path — more reliable for hotlinking than the raw /images/ path.
+function wikiIcon(itemName) {
+  const file = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+  return 'https://oldschool.runescape.wiki/w/Special:FilePath/' + encodeURIComponent(file) + '.png';
+}
+
+function ownsKeyItem(item) {
+  if (item.matchAll) return item.matchAll.every(m => hasItem(m));
+  return hasItem(item.match || item.name);
+}
+
+function switchView(view, btn) {
+  document.querySelectorAll('.view-nav .view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-planner').style.display  = (view === 'planner')  ? 'block' : 'none';
+  document.getElementById('view-keyitems').style.display = (view === 'keyitems') ? 'block' : 'none';
+}
+
+function renderKeyItems() {
+  const grid = document.getElementById('ki-grid');
+  if (!grid) return;
+
+  let owned = 0;
+  grid.innerHTML = KEY_ITEMS.map(item => {
+    const have = ownsKeyItem(item);
+    if (have) owned++;
+    const icon = wikiIcon(item.img || item.name);
+    // onerror: hide the broken image and reveal the text fallback so a wrong
+    // wiki name degrades to a labelled square instead of a broken-image glyph.
+    return `
+      <div class="ki-cell ${have ? 'owned' : ''}">
+        <img src="${icon}" alt="${item.name}"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <div class="ki-fallback" style="display:none">${item.name}</div>
+        <div class="ki-tip">
+          <span class="ki-tip-name">${item.name}</span>
+          <span class="ki-tip-src">${have ? '✓ Obtained' : item.src}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  const countEl = document.getElementById('ki-count');
+  if (countEl) countEl.textContent = `${owned} / ${KEY_ITEMS.length}`;
 }
 
 function renderStats() {
   const stats = state.character.stats;
-  const icons = {
+
+  // Wiki skill-icon filenames use "<Skill> icon.png". A few don't match the export's
+  // key spelling, so normalise here. Emoji kept as onerror fallback.
+  const ICON_NAME = {
+    Attack:'Attack', Defence:'Defence', Strength:'Strength', Hitpoints:'Hitpoints',
+    Ranged:'Ranged', Prayer:'Prayer', Magic:'Magic', Cooking:'Cooking',
+    Woodcutting:'Woodcutting', Fletching:'Fletching', Fishing:'Fishing', Firemaking:'Firemaking',
+    Crafting:'Crafting', Smithing:'Smithing', Mining:'Mining', Herblore:'Herblore',
+    Agility:'Agility', Thieving:'Thieving', Slayer:'Slayer', Farming:'Farming',
+    Runecraft:'Runecraft', Runecrafting:'Runecraft', Hunter:'Hunter',
+    Construction:'Construction', Sailing:'Sailing'
+  };
+  const EMOJI = {
     Attack:'⚔️', Defence:'🛡️', Strength:'💪', Hitpoints:'❤️',
     Ranged:'🏹', Prayer:'🙏', Magic:'🔮', Cooking:'🍳',
     Woodcutting:'🪓', Fletching:'🏹', Fishing:'🐟', Firemaking:'🔥',
     Crafting:'💍', Smithing:'⚒️', Mining:'⛏️', Herblore:'🌿',
     Agility:'🏃', Thieving:'🗝️', Slayer:'💀', Farming:'🌱',
-    Runecraft:'🌀', Hunter:'🦊', Construction:'🏠', Sailing:'⛵'
+    Runecraft:'🌀', Runecrafting:'🌀', Hunter:'🦊', Construction:'🏠', Sailing:'⛵'
+  };
+
+  const iconUrl = skill => {
+    const file = (ICON_NAME[skill] || skill) + ' icon';
+    return 'https://oldschool.runescape.wiki/w/Special:FilePath/' + encodeURIComponent(file) + '.png';
   };
 
   const bar = document.getElementById('stats-bar');
   bar.innerHTML = Object.entries(stats).map(([skill, data]) => `
     <div class="stat-pill ${data.real_level >= 99 ? 'maxed' : ''}">
-      <span class="skill-icon">${icons[skill] || '📊'}</span>
+      <span class="skill-icon">
+        <img class="skill-icon-img" src="${iconUrl(skill)}" alt="${skill}"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+        <span class="skill-icon-fallback" style="display:none">${EMOJI[skill] || '📊'}</span>
+      </span>
       <span class="skill-name">${skill.slice(0,4)}</span>
       <span class="skill-level">${data.real_level}</span>
     </div>
