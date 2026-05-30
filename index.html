@@ -512,19 +512,19 @@
     <!-- Filters -->
     <div class="filters">
       <span class="filter-label">Show:</span>
-      <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
-      <button class="filter-btn" onclick="setFilter('unlocked', this)">Unlocked</button>
-      <button class="filter-btn" onclick="setFilter('close', this)">Almost there</button>
-      <button class="filter-btn" onclick="setFilter('locked', this)">Locked</button>
-      <button class="filter-btn" onclick="setFilter('completed', this)">✓ Completed</button>
+      <button class="filter-btn active" data-group="filter" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" data-group="filter" onclick="setFilter('unlocked', this)">Unlocked</button>
+      <button class="filter-btn" data-group="filter" onclick="setFilter('close', this)">Almost there</button>
+      <button class="filter-btn" data-group="filter" onclick="setFilter('locked', this)">Locked</button>
+      <button class="filter-btn" data-group="filter" onclick="setFilter('completed', this)">✓ Completed</button>
       <span class="filter-label" style="margin-left:12px">Category:</span>
-      <button class="filter-btn active" onclick="setCat('all', this)">All</button>
-      <button class="filter-btn" onclick="setCat('bossing', this)">Bossing</button>
-      <button class="filter-btn" onclick="setCat('slayer', this)">Slayer</button>
-      <button class="filter-btn" onclick="setCat('skilling', this)">Skilling</button>
-      <button class="filter-btn" onclick="setCat('diary', this)">Diaries</button>
-      <button class="filter-btn" onclick="setCat('poh', this)">PoH</button>
-      <button class="filter-btn" onclick="setCat('milestone', this)">⭐ Milestones</button>
+      <button class="filter-btn active" data-group="cat" onclick="setCat('all', this)">All</button>
+      <button class="filter-btn" data-group="cat" onclick="setCat('bossing', this)">Bossing</button>
+      <button class="filter-btn" data-group="cat" onclick="setCat('slayer', this)">Slayer</button>
+      <button class="filter-btn" data-group="cat" onclick="setCat('skilling', this)">Skilling</button>
+      <button class="filter-btn" data-group="cat" onclick="setCat('diary', this)">Diaries</button>
+      <button class="filter-btn" data-group="cat" onclick="setCat('poh', this)">PoH</button>
+      <button class="filter-btn" data-group="cat" onclick="setCat('milestone', this)">⭐ Milestones</button>
     </div>
 
     <div id="cards-container"></div>
@@ -1310,22 +1310,16 @@ function renderStats() {
 
 function setFilter(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.filters .filter-btn').forEach(b => {
-    if (['all','unlocked','close','locked'].some(x => b.textContent.toLowerCase().includes(x))) {
-      b.classList.remove('active');
-    }
-  });
+  document.querySelectorAll('.filters .filter-btn[data-group="filter"]')
+    .forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCards();
 }
 
 function setCat(c, btn) {
   currentCat = c;
-  document.querySelectorAll('.filters .filter-btn').forEach(b => {
-    if (['all','bossing','slayer','skilling','diary','poh','⭐ milestones'].some(x => b.textContent.toLowerCase() === x)) {
-      b.classList.remove('active');
-    }
-  });
+  document.querySelectorAll('.filters .filter-btn[data-group="cat"]')
+    .forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCards();
 }
