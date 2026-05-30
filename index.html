@@ -28,6 +28,7 @@
     --red-bg: #1f0d0d;
     --border: rgba(201,168,76,0.15);
     --border-strong: rgba(201,168,76,0.35);
+    --blue-light: #6a9ad8;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -263,6 +264,7 @@
 
   .activity-card.unlocked { border-color: rgba(74,140,92,0.4); }
   .activity-card.unlocked::before { background: var(--green); }
+  .activity-card.unlocked.boosted::before { background: linear-gradient(var(--green) 50%, var(--blue-light) 50%); }
   .activity-card.close { border-color: rgba(184,124,42,0.4); }
   .activity-card.close::before { background: var(--amber); }
   .activity-card.locked { opacity: .6; }
@@ -315,6 +317,7 @@
   }
 
   .badge-unlocked { background: var(--green-bg); color: var(--green-light); border: 1px solid var(--green); }
+  .badge-boost { background: rgba(106,154,216,0.1); color: var(--blue-light); border: 1px solid var(--blue-light); }
   .badge-close { background: var(--amber-bg); color: var(--amber-light); border: 1px solid var(--amber); }
   .badge-locked { background: var(--red-bg); color: var(--red-light); border: 1px solid var(--red); }
 
@@ -332,10 +335,12 @@
   .req-item.met { color: var(--green-light); }
   .req-item.unmet { color: var(--red-light); }
   .req-item.close-req { color: var(--amber-light); }
+  .req-item.boost-req { color: var(--blue-light); }
 
   .req-item .req-icon.met-icon::before { content: '✓'; }
   .req-item .req-icon.unmet-icon::before { content: '✗'; }
   .req-item .req-icon.close-icon::before { content: '◎'; }
+  .req-item .req-icon.boost-icon::before { content: '⚗'; }
 
   .card-note {
     margin-top: 10px;
@@ -594,14 +599,22 @@ function checkReady() {
 }
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
+// Alias-aware so the Runecraft / Runecrafting key mismatch can't silently return 1.
+const SKILL_ALIASES = {
+  Runecraft:    ['Runecraft', 'Runecrafting'],
+  Runecrafting: ['Runecraft', 'Runecrafting'],
+};
+
 function getLevel(skillName) {
-  if (!state.character) return 1;
+  if (!state.character || !state.character.stats) return 1;
   const stats = state.character.stats;
-  // Try exact match first, then case-insensitive
-  const s = stats[skillName] || Object.values(stats).find((_, i) =>
-    Object.keys(stats)[i].toLowerCase() === skillName.toLowerCase()
-  );
-  return s ? s.real_level : 1;
+  const candidates = SKILL_ALIASES[skillName] || [skillName];
+  for (const key of Object.keys(stats)) {
+    if (candidates.some(c => c.toLowerCase() === key.toLowerCase())) {
+      return stats[key].real_level;
+    }
+  }
+  return 1;
 }
 
 function hasQuest(questName) {
@@ -630,10 +643,33 @@ function questCount() {
   return state.quests.summary?.finished || 0;
 }
 
+function questTotal() {
+  if (!state.quests) return 0;
+  // Prefer an explicit total; fall back to counting the quest array.
+  return state.quests.summary?.total || (state.quests.quests ? state.quests.quests.length : 0);
+}
+
+function hasQuestCape() {
+  const total = questTotal();
+  return total > 0 && questCount() >= total;
+}
+
+// ─── Reliable boosts only (#nostews) — verified during planning ───────────────
+// 'amount' is the LEVEL boost granted. One boost at a time (no stacking), except
+// saw+tea which are an invisible(+3) + visible(+3) pair that legitimately stack.
+const BOOSTS = {
+  crafting_pie:         { amount: 4, label: 'pie +4' },      // Mushroom pie
+  magic_potion:         { amount: 4, label: 'mage pot +4' }, // Magic potion
+  construction_saw_tea: { amount: 6, label: 'saw+tea +6' },  // Crystal saw (+3) + POH tea (+3)
+};
+
 // ─── Requirements definition ──────────────────────────────────────────────────
-// Each requirement: { type, label, check(), value (optional for 'close' calc) }
-// Types: stat, quest, diary, item, other
-// Status: met | close | unmet
+// Each requirement: { label, status }
+// Status: met | boost | close | unmet
+//   met   = natural level reached
+//   boost = reachable RIGHT NOW with one reliable boost (counts as unlockable)
+//   close = within 5 levels of the natural requirement
+//   unmet = further off
 
 function reqStat(skill, level) {
   const current = getLevel(skill);
@@ -642,6 +678,21 @@ function reqStat(skill, level) {
   return {
     label: `${skill} ${level} (${current}/${level})`,
     status: met ? 'met' : close ? 'close' : 'unmet'
+  };
+}
+
+function reqStatBoostable(skill, level, boostKey) {
+  const current = getLevel(skill);
+  const boost = BOOSTS[boostKey]?.amount || 0;
+  const boostLabel = BOOSTS[boostKey]?.label || `+${boost}`;
+  const met = current >= level;
+  const viaBoost = !met && (current + boost) >= level;
+  const close = !met && !viaBoost && current >= level - 5;
+  return {
+    label: viaBoost
+      ? `${skill} ${level} — reachable now w/ ${boostLabel} (${current}+${boost})`
+      : `${skill} ${level} (${current}/${level})`,
+    status: met ? 'met' : viaBoost ? 'boost' : close ? 'close' : 'unmet'
   };
 }
 
@@ -666,7 +717,7 @@ function reqOther(label, met) {
 
 // ─── Activity definitions ─────────────────────────────────────────────────────
 function getActivities() {
-  const questCape = questCount() >= 200;
+  const questCape = hasQuestCape();
 
   return [
     // ── BOSSING ──
@@ -674,11 +725,10 @@ function getActivities() {
       id: 'tormented_demons',
       name: 'Tormented Demons',
       category: 'bossing',
-      note: 'Synapse drop. Requires a Greater Demon Slayer task.',
+      note: 'Synapse (demonbane weapon upgrade). Freely attackable after While Guthix Sleeps — no Slayer task or level needed.',
       reqs: () => [
-        reqStat('Slayer', 85),
-        reqStat('Attack', 85),
-        reqStat('Strength', 85),
+        reqStat('Attack', 80),
+        reqStat('Ranged', 80),
         reqOther('Quest: While Guthix Sleeps', hasQuest("While Guthix Sleeps")),
       ]
     },
@@ -717,11 +767,50 @@ function getActivities() {
       id: 'calvarion',
       name: "Calvar'ion",
       category: 'bossing',
-      note: 'Salve(ei) applies. D-pick 1/358. Hard cap recommended at 400kc.',
+      note: "Dragon pickaxe (~1/358). Soft prerequisite for GotR — better pick = faster fragments. Salve(ei) is a DPS boost (not required). Suggested dry cap ~2x rate, then start GotR on current pick.",
       reqs: () => [
         reqStat('Slayer', 1),
-        reqItem('Salve amulet'),
         reqOther('Wilderness boss access', true),
+      ]
+    },
+    {
+      id: 'vorkath',
+      name: 'Vorkath',
+      category: 'bossing',
+      note: "Ava's Assembler (Vorkath's head + accumulator + 75 mithril arrows, 70 Ranged). Draconic Visage drops here too.",
+      reqs: () => [
+        reqStat('Ranged', 70),
+        reqOther('Quest: Dragon Slayer II', hasQuest('Dragon Slayer II')),
+      ]
+    },
+    {
+      id: 'demonic_gorillas',
+      name: 'Demonic Gorillas',
+      category: 'bossing',
+      note: 'Zenyte shards (x3 for ring/necklace/bracelet). Shard only — fuse with cut onyx at Ape Atoll. See Zenyte nodes for the full chain.',
+      reqs: () => [
+        reqOther('Quest: Monkey Madness II', hasQuest('Monkey Madness II')),
+      ]
+    },
+    {
+      id: 'gotr',
+      name: 'Guardians of the Rift (RC 85)',
+      category: 'skilling',
+      note: 'Triple-dip: Runecrafting 85 (diaries) + Raiments of the Eye + Abyssal pouch. Entry is RC 27; 85 is the target. Dragon pickaxe speeds fragment mining.',
+      reqs: () => [
+        reqStat('Runecrafting', 85),
+        reqOther('Raiments of the Eye (full set)', hasItem('Hat of the eye') && hasItem('Robe top of the eye') && hasItem('Robe bottoms of the eye') && hasItem('Boots of the eye')),
+        reqOther('Abyssal pouch', hasItem('Abyssal pouch')),
+      ]
+    },
+    {
+      id: 'sepulchre',
+      name: 'Hallowed Sepulchre (Agility 90)',
+      category: 'skilling',
+      note: 'Double-dip: Agility 90 (diaries) + Ring of Endurance (uncharged ring from coffins). Entry 52 Agility; floors 4-5 want 82/92.',
+      reqs: () => [
+        reqStat('Agility', 90),
+        reqOther('Ring of Endurance (uncharged) obtained', hasItem('Ring of endurance')),
       ]
     },
     {
@@ -739,11 +828,10 @@ function getActivities() {
       id: 'royal_titans',
       name: 'Royal Titans',
       category: 'bossing',
-      note: 'Prayer upgrades + Air Orbs. Needs a partner.',
+      note: 'Twinflame staff + Deadeye / Mystic Vigour prayer scrolls. Duo-friendly; no Slayer requirement.',
       reqs: () => [
-        reqStat('Slayer', 85),
-        reqStat('Prayer', 70),
-        reqOther('Partner available', false),
+        reqStat('Prayer', 43),
+        reqOther('Partner available (recommended)', false),
       ]
     },
     {
@@ -773,7 +861,7 @@ function getActivities() {
       id: 'slayer_85',
       name: 'Slayer 85',
       category: 'slayer',
-      note: 'Unlocks Abyssal Whip via Abyssal Demons.',
+      note: 'Unlocks Abyssal Whip (Abyssal Demons) + the Morytania diary skill target. Imbued Heart drops across the grind.',
       reqs: () => [
         reqStat('Slayer', 85),
         reqOther('Using Duradel/Konar', true),
@@ -786,6 +874,15 @@ function getActivities() {
       note: 'Cave Krakens unlock. Better Slayer helm variants.',
       reqs: () => [
         reqStat('Slayer', 87),
+      ]
+    },
+    {
+      id: 'slayer_93',
+      name: 'Slayer 93 (Western Provinces)',
+      category: 'slayer',
+      note: 'Slayer target for the Western Provinces diary. Continues the Imbued Heart grind.',
+      reqs: () => [
+        reqStat('Slayer', 93),
       ]
     },
     {
@@ -820,23 +917,21 @@ function getActivities() {
       ]
     },
     {
-      id: 'construction_83',
-      name: 'Construction 83',
+      id: 'construction_90',
+      name: 'Construction 90 (Ornate Pool)',
       category: 'poh',
-      note: 'Required for Ornate Jewellery Pool. Plank Make spell recommended.',
+      note: 'Required for Ornate Rejuvenation Pool — corrected from 83. Boostable to base 84 via crystal saw + POH tea (+6). Plank Make recommended. (Lunar Diplomacy only needed for the Plank Make method, not the build itself.)',
       reqs: () => [
-        reqStat('Construction', 83),
-        reqOther('Lunar Diplomacy complete', hasQuest('Lunar Diplomacy')),
-        reqOther('GP for planks (~15m via Plank Make)', getLevel('Construction') >= 83),
+        reqStatBoostable('Construction', 90, 'construction_saw_tea'),
       ]
     },
     {
-      id: 'herblore_84',
-      name: 'Herblore 84',
+      id: 'herblore_87',
+      name: 'Herblore 87 (Anti-venom)',
       category: 'poh',
-      note: 'Required for Ornate Jewellery Pool alongside Construction 83.',
+      note: 'Ironman co-req for the Ornate Pool: 87 Herblore brews anti-venom (Antidote++ + Zulrah scales). Boostable. Also clears the Varrock 86 diary target en route.',
       reqs: () => [
-        reqStat('Herblore', 84),
+        reqStatBoostable('Herblore', 87, 'crafting_pie'),
       ]
     },
     {
@@ -852,12 +947,12 @@ function getActivities() {
     // ── PoH ──
     {
       id: 'ornate_pool',
-      name: 'Ornate Jewellery Pool',
+      name: 'Ornate Rejuvenation Pool',
       category: 'poh',
-      note: 'Full restore on use. Similar function to Nardah Shrine.',
+      note: 'Full restore (HP, prayer, run, spec, cures poison/venom). Construction 90 boostable to base 84 via crystal saw + POH tea (+6). Herblore 87 is the Ironman anti-venom co-req (boostable). Builds by upgrading the Fancy pool.',
       reqs: () => [
-        reqStat('Construction', 83),
-        reqStat('Herblore', 84),
+        reqStatBoostable('Construction', 90, 'construction_saw_tea'),
+        reqStatBoostable('Herblore', 87, 'crafting_pie'),
         reqOther('GP for supplies', false),
       ]
     },
@@ -945,7 +1040,7 @@ function getActivities() {
       note: 'Unlocks Duradel as Slayer master. One of the most impactful Ironman achievements.',
       completed: () => questCape,
       reqs: () => [
-        reqOther(`All quests complete (${questCount()}/295 finished)`, questCape),
+        reqOther(`All quests complete (${questCount()}/${questTotal() || '?'} finished)`, questCape),
       ]
     },
     {
@@ -985,10 +1080,11 @@ function getActivities() {
       id: 'amulet_of_fury',
       name: 'Amulet of Fury',
       category: 'milestone',
-      note: 'Best-in-slot amulet until Torture. Requires Onyx from TzHaar shop or drop. You have 4 Blood Shards banked for later.',
-      completed: () => hasItem('Amulet of fury') || hasItem('Amulet of torture'),
+      note: 'BiS-until-Torture all-round amulet. Onyx amulet needs 90 Crafting (boostable to base 86 w/ pie); enchant is Lvl-6 at 87 Magic. Bridges until the zenyte Torture.',
+      completed: () => hasItem('Amulet of fury') || hasItem('Amulet of torture') || hasItem('Amulet of blood fury'),
       reqs: () => [
-        reqStat('Crafting', 87),
+        reqStatBoostable('Crafting', 90, 'crafting_pie'),
+        reqStat('Magic', 87),
         reqOther('Onyx gemstone obtained', hasItem('Onyx') || hasItem('Uncut onyx')),
       ]
     },
@@ -1082,15 +1178,59 @@ function getActivities() {
       ]
     },
     {
-      id: 'zenyte_jewelry',
-      name: 'Zenyte Jewellery',
+      id: 'ring_of_suffering',
+      name: 'Ring of Suffering (zenyte)',
       category: 'milestone',
-      note: 'Torture / Anguish / Torment amulets. From Demonic Gorillas via Zenyte shards.',
-      completed: () => hasItem('Amulet of torture') || hasItem('Necklace of anguish') || hasItem('Tormented bracelet'),
+      note: 'PRIORITY: BiS-until-Lightbearer, excellent at Zulrah. Crafting 89 (cut + ring), boostable to base 85 w/ pie. L7 Enchant = 93 Magic (boostable). Needs 1 onyx + 1 zenyte shard + MM2 greegree.',
+      completed: () => hasItem('Ring of suffering'),
       reqs: () => [
-        reqStat('Crafting', 89),
+        reqStatBoostable('Crafting', 89, 'crafting_pie'),
+        reqStatBoostable('Magic', 93, 'magic_potion'),
+        reqOther('Onyx (cut/uncut) obtained', hasItem('Onyx') || hasItem('Uncut onyx')),
+        reqOther('Zenyte shard obtained', hasItem('Zenyte shard') || hasItem('Zenyte')),
         reqOther('Quest: Monkey Madness II', hasQuest('Monkey Madness II')),
-        reqOther('Zenyte shard from Demonic Gorilla', hasItem('Zenyte shard') || hasItem('Zenyte')),
+      ]
+    },
+    {
+      id: 'necklace_of_anguish',
+      name: 'Necklace of Anguish (zenyte)',
+      category: 'milestone',
+      note: 'BiS ranged necklace. Crafting 92, boostable to base 88 w/ pie. Happy to be gatekept here for a while.',
+      completed: () => hasItem('Necklace of anguish'),
+      reqs: () => [
+        reqStatBoostable('Crafting', 92, 'crafting_pie'),
+        reqStatBoostable('Magic', 93, 'magic_potion'),
+        reqOther('Onyx (cut/uncut) obtained', hasItem('Onyx') || hasItem('Uncut onyx')),
+        reqOther('Zenyte shard obtained', hasItem('Zenyte shard') || hasItem('Zenyte')),
+        reqOther('Quest: Monkey Madness II', hasQuest('Monkey Madness II')),
+      ]
+    },
+    {
+      id: 'tormented_bracelet',
+      name: 'Tormented Bracelet (zenyte)',
+      category: 'milestone',
+      note: 'BiS magic bracelet. Crafting 95, boostable to base 91 w/ pie.',
+      completed: () => hasItem('Tormented bracelet'),
+      reqs: () => [
+        reqStatBoostable('Crafting', 95, 'crafting_pie'),
+        reqStatBoostable('Magic', 93, 'magic_potion'),
+        reqOther('Onyx (cut/uncut) obtained', hasItem('Onyx') || hasItem('Uncut onyx')),
+        reqOther('Zenyte shard obtained', hasItem('Zenyte shard') || hasItem('Zenyte')),
+        reqOther('Quest: Monkey Madness II', hasQuest('Monkey Madness II')),
+      ]
+    },
+    {
+      id: 'amulet_of_torture',
+      name: 'Amulet of Torture (zenyte)',
+      category: 'milestone',
+      note: 'Very-late game — a Fury bridges until then. Crafting 98, boostable to base 94 w/ pie.',
+      completed: () => hasItem('Amulet of torture'),
+      reqs: () => [
+        reqStatBoostable('Crafting', 98, 'crafting_pie'),
+        reqStatBoostable('Magic', 93, 'magic_potion'),
+        reqOther('Onyx (cut/uncut) obtained', hasItem('Onyx') || hasItem('Uncut onyx')),
+        reqOther('Zenyte shard obtained', hasItem('Zenyte shard') || hasItem('Zenyte')),
+        reqOther('Quest: Monkey Madness II', hasQuest('Monkey Madness II')),
       ]
     },
     {
@@ -1113,20 +1253,22 @@ function getActivities() {
 function evaluateActivity(activity) {
   // Milestones with a completed() check take priority
   if (activity.completed && activity.completed()) {
-    return { ...activity, reqs: activity.reqs(), status: 'completed' };
+    return { ...activity, reqs: activity.reqs(), status: 'completed', boosted: false };
   }
 
   const reqs = activity.reqs();
-  const allMet = reqs.every(r => r.status === 'met');
+  // 'boost' counts toward unlocking — you can act now with a reliable consumable.
+  const unlockSatisfied = reqs.every(r => r.status === 'met' || r.status === 'boost');
+  const boosted = unlockSatisfied && reqs.some(r => r.status === 'boost');
   const anyUnmet = reqs.some(r => r.status === 'unmet');
   const anyClose = reqs.some(r => r.status === 'close');
 
   let status;
-  if (allMet) status = 'unlocked';
+  if (unlockSatisfied) status = 'unlocked';
   else if (!anyUnmet || (anyClose && reqs.filter(r => r.status === 'unmet').length <= 2)) status = 'close';
   else status = 'locked';
 
-  return { ...activity, reqs, status };
+  return { ...activity, reqs, status, boosted };
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -1247,14 +1389,16 @@ function renderCards() {
 
 function renderCard(activity) {
   const badgeMap = {
-    unlocked: '<span class="card-badge badge-unlocked">Ready</span>',
+    unlocked: activity.boosted
+      ? '<span class="card-badge badge-boost">Ready ⚗</span>'
+      : '<span class="card-badge badge-unlocked">Ready</span>',
     close: '<span class="card-badge badge-close">Almost</span>',
     locked: '<span class="card-badge badge-locked">Locked</span>',
     completed: '<span class="card-badge badge-completed">✓ Done</span>',
   };
 
-  const reqIcons = { met: 'met-icon', unmet: 'unmet-icon', close: 'close-icon' };
-  const reqClasses = { met: 'met', unmet: 'unmet', close: 'close-req' };
+  const reqIcons = { met: 'met-icon', unmet: 'unmet-icon', close: 'close-icon', boost: 'boost-icon' };
+  const reqClasses = { met: 'met', unmet: 'unmet', close: 'close-req', boost: 'boost-req' };
 
   const reqsHtml = activity.reqs.map(r => `
     <li class="req-item ${reqClasses[r.status]}">
@@ -1264,7 +1408,7 @@ function renderCard(activity) {
   `).join('');
 
   return `
-    <div class="activity-card ${activity.status}${activity.category === 'milestone' ? ' milestone-card' : ''}">
+    <div class="activity-card ${activity.status}${activity.boosted ? ' boosted' : ''}${activity.category === 'milestone' ? ' milestone-card' : ''}">
       <div class="card-header">
         <div>
           <div class="card-title">${activity.name}</div>
