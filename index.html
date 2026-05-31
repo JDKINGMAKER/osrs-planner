@@ -1470,7 +1470,13 @@ function renderKeyItems() {
   if (!grid) return;
 
   let owned = 0, obtainable = 0;
-  grid.innerHTML = KEY_ITEMS.map(item => {
+  // Sort by accessibility (ascending). Stable: equal scores keep catalogue order.
+  // Universal layout — same for every account; only the colour overlay is personal.
+  const ordered = KEY_ITEMS
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => ((a.item.access ?? 99) - (b.item.access ?? 99)) || (a.i - b.i))
+    .map(x => x.item);
+  grid.innerHTML = ordered.map(item => {
     const status = keyItemStatus(item);
     if (status === 'owned') owned++;
     else if (status === 'obtainable') obtainable++;
