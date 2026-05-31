@@ -1498,8 +1498,8 @@ const KEY_ITEMS = [
     matchAll: ['Prospector helmet','Prospector jacket','Prospector legs','Prospector boots'] },
   { name: "Smiths uniform",       src: 'Giants Foundry', img: 'Smiths tunic',
     matchAll: ['Smiths tunic','Smiths trousers','Smiths boots','Smiths gloves','Smiths hat'] },
-  { name: "Carpenters outfit",    src: 'Mahogany Homes', img: 'Carpenters helmet',
-    matchAll: ['Carpenters helmet','Carpenters shirt','Carpenters trousers','Carpenters boots'] },
+  { name: "Carpenter's outfit",   src: 'Mahogany Homes', img: "Carpenter's helmet",
+    matchAll: ["Carpenter's helmet","Carpenter's shirt","Carpenter's trousers","Carpenter's boots"] },
   { name: 'Raiments of the Eye',  src: 'Guardians of the Rift', img: 'Hat of the eye',
     matchAll: ['Hat of the eye','Robe top of the eye','Robe bottoms of the eye','Boots of the eye'] },
   { name: "Farmers outfit",       src: 'Tithe Farm', img: "Farmer's strawhat",
@@ -1522,7 +1522,7 @@ const KEY_ITEMS = [
   { name: 'Plank sack',           src: 'Mahogany Homes', match: 'Plank sack' },
   { name: "Amy's saw",            src: 'Mahogany Homes', match: "Amy's saw" },
   { name: 'Imcando hammer',       src: 'Perilous Moons (locked off)', match: 'Imcando hammer' },
-  { name: 'Abyssal pouch',        src: 'Guardians of the Rift' },
+  { name: 'Abyssal pouch',        src: 'Guardians of the Rift', img: 'Abyssal pouch', match: 'Abyssal pouch' },
   { name: 'Ring of endurance',    src: 'Hallowed Sepulchre', match: 'Ring of endurance' },
   { name: 'Cooking gauntlets',    src: 'Family Crest', img: 'Cooking gauntlets', matchAny: ['Cooking gauntlets','Gauntlets of cooking'] },
   { name: 'Magic secateurs',      src: 'Fairytale I', match: 'Magic secateurs' },
@@ -1542,7 +1542,7 @@ const KEY_ITEMS = [
   // ════════ WAVE 4 — CAPABILITY TILES (access/ability, never "owned") ════════
   // status comes purely from reqs; capability:true keeps them out of the owned count
   { name: 'Ornate rejuvenation pool', src: 'POH — 90 Con + 87 Herb', capability: true,
-    img: 'Ornate rejuvenation pool',
+    img: 'Ornate rejuvenation pool icon',
     reqs: () => [ reqStatBoostable('Construction', 90, 'construction_saw_tea'), reqStatBoostable('Herblore', 87, 'crafting_pie') ] },
   { name: 'Bones to Peaches',     src: 'MTA (Telekinetic + points)', capability: true, img: 'Peach',
     reqs: () => [ reqStat('Magic', 60) ] },
@@ -1560,8 +1560,8 @@ const KEY_ITEMS = [
   // ════════ WAVE 4b — SKILLCAPES (QoL-important only) ════════
   { name: 'Crafting cape',        src: '99 Crafting', img: 'Crafting cape',
     matchAny: ['Crafting cape(t)','Crafting cape'], reqs: () => [ reqStat('Crafting', 99) ] },
-  { name: 'Construction cape',    src: '99 Construction', img: 'Construction cape',
-    matchAny: ['Construction cape(t)','Construction cape'], reqs: () => [ reqStat('Construction', 99) ] },
+  { name: 'Construction cape',    src: '99 Construction', img: 'Construct. cape',
+    matchAny: ['Construct. cape(t)','Construct. cape','Construction cape(t)','Construction cape'], reqs: () => [ reqStat('Construction', 99) ] },
 
   // ════════ MISC CAPES ════════
   { name: 'Max cape',             src: 'All 99s', match: 'Max cape',
