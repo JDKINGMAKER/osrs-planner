@@ -912,11 +912,11 @@ function getActivities() {
       id: 'gotr',
       name: 'Guardians of the Rift (RC 85)',
       category: 'skilling',
-      note: 'Triple-dip: Runecrafting 85 (diaries) + Raiments of the Eye + Abyssal pouch. Entry is RC 27; 85 is the target. Dragon pickaxe speeds fragment mining.',
+      note: 'Triple-dip: Runecrafting 85 (diaries) + Raiments of the Eye + Colossal pouch. Entry is RC 27; 85 is the target. Dragon pickaxe speeds fragment mining.',
       reqs: () => [
         reqStat('Runecrafting', 85),
         reqOther('Raiments of the Eye (full set)', hasItem('Hat of the eye') && hasItem('Robe top of the eye') && hasItem('Robe bottoms of the eye') && hasItem('Boots of the eye')),
-        reqOther('Abyssal pouch', hasItem('Abyssal pouch')),
+        reqOther('Colossal pouch', hasItem('Colossal pouch')),
       ]
     },
     {
@@ -1522,7 +1522,7 @@ const KEY_ITEMS = [
   { name: 'Plank sack',           src: 'Mahogany Homes', match: 'Plank sack' },
   { name: "Amy's saw",            src: 'Mahogany Homes', match: "Amy's saw" },
   { name: 'Imcando hammer',       src: 'Perilous Moons (locked off)', match: 'Imcando hammer' },
-  { name: 'Abyssal pouch',        src: 'Guardians of the Rift', img: 'Abyssal pouch', match: 'Abyssal pouch' },
+  { name: 'Colossal pouch',       src: 'Guardians of the Rift (stitch 4 pouches)', img: 'Colossal pouch', match: 'Colossal pouch' },
   { name: 'Ring of endurance',    src: 'Hallowed Sepulchre', match: 'Ring of endurance' },
   { name: 'Cooking gauntlets',    src: 'Family Crest', img: 'Cooking gauntlets', matchAny: ['Cooking gauntlets','Gauntlets of cooking'] },
   { name: 'Magic secateurs',      src: 'Fairytale I', match: 'Magic secateurs' },
