@@ -21,12 +21,22 @@
  * ==========================================================================*/
 
 const KEY_ITEMS = [
-  { name: 'Fire cape', access: 5.5,            src: 'TzHaar Fight Cave' },
-  { name: 'Barrows gloves', access: 4.5,       src: 'Recipe for Disaster' },
-  { name: 'Quest point cape', access: 6.5,     src: 'All quests complete', match: 'Quest point cape' },
+  { name: 'Fire cape', access: 5.5,            src: 'TzHaar Fight Cave',
+    // No real entry gate (hard always passes). soft = realistic readiness for an early iron.
+    soft: () => [
+      reqStat('Ranged', 70),
+      reqStat('Prayer', 43),
+      reqAnyItem('Potion source (prayer/super restore)', ['Prayer potion','Super restore']),
+      reqAnyItem('Ranged wpn (RCB/crystal/sunlight cbow/Karil cbow)', ['Rune crossbow','Crystal bow','sunlight crossbow',"Karil's crossbow"]),
+    ] },
+  { name: 'Barrows gloves', access: 4.5,       src: 'Recipe for Disaster',
+    hard: () => [ reqOther('Recipe for Disaster complete', hasQuest('Recipe for Disaster')) ] },
+  { name: 'Quest point cape', access: 6.5,     src: 'All quests complete', match: 'Quest point cape',
+    hard: () => [ reqOther('All quests complete', hasQuestCape()) ] },
   { name: 'Rune pouch', access: 5,           src: 'Slayer / LMS / Wintertodt', match: 'Rune pouch' },
   { name: 'Divine rune pouch', access: 7.5,    src: 'Upgrade Rune pouch w/ Thread of Elidinis (ToA), 75 Craft', match: 'Divine rune pouch',
-    reqs: () => [ reqStatBoostable('Crafting', 75, 'crafting_pie'), reqOther('Rune pouch owned', hasItem('Rune pouch')), reqOther('ToA access (Beneath Cursed Sands)', hasQuest('Beneath Cursed Sands')) ] },
+    hard: () => [ reqOther('ToA capability (Into the Tombs)', hasToACapability()), reqOther('Rune pouch owned', hasItem('Rune pouch')) ],
+    soft: () => [ reqStatBoostable('Crafting', 75, 'crafting_pie') ] },
   { name: "Ava's accumulator", access: 2.5,    src: 'Animal Magnetism' },
   { name: "Ava's assembler", access: 6.5,      src: 'Vorkath head + accumulator' },
   { name: 'Berserker ring (i)', access: 6,   src: 'Dagannoth Rex + imbue', match: 'erserker ring (i)' },

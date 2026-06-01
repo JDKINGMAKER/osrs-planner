@@ -264,31 +264,37 @@
   }
   .ki-cell:hover { transform: translateY(-2px); border-color: var(--border-strong); z-index: 5; }
 
-  /* ── Three-tier status ── owned wins; else obtainable; else gated ── */
-  .ki-cell.owned { border-color: var(--green); box-shadow: inset 0 0 14px rgba(74,140,92,0.22); background: rgba(74,140,92,0.05); }
-  .ki-cell.obtainable { border-color: var(--gold); box-shadow: inset 0 0 14px rgba(201,168,76,0.18); background: rgba(201,168,76,0.04); }
-  .ki-cell.gated { border-color: rgba(140,58,58,0.4); }
+  /* ── Four-state cascade ── owned > ready > doable > locked ── */
+  .ki-cell.owned  { border-color: var(--green); box-shadow: inset 0 0 14px rgba(74,140,92,0.22); background: rgba(74,140,92,0.05); }
+  .ki-cell.ready  { border-color: var(--gold); box-shadow: inset 0 0 14px rgba(201,168,76,0.18); background: rgba(201,168,76,0.04); }
+  .ki-cell.doable { border-color: var(--border); }            /* possible, under-equipped: plain grey */
+  .ki-cell.locked { border-color: rgba(140,58,58,0.35); }     /* hard-locked: grey + padlock badge */
 
-  /* obtainable tiles get a subtle pulse to draw the eye to "go get it now" */
+  /* ready tiles get a subtle pulse to draw the eye to "go get it now" */
   @keyframes ki-pulse {
     0%,100% { box-shadow: inset 0 0 14px rgba(201,168,76,0.18); }
     50%     { box-shadow: inset 0 0 20px rgba(201,168,76,0.34); }
   }
-  .ki-cell.obtainable { animation: ki-pulse 2.4s ease-in-out infinite; }
+  .ki-cell.ready { animation: ki-pulse 2.4s ease-in-out infinite; }
 
-  /* status dot, top-right of each tile */
+  /* status dot, top-right */
   .ki-status-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; }
-  .ki-cell.owned .ki-status-dot { background: var(--green-light); }
-  .ki-cell.obtainable .ki-status-dot { background: var(--gold-light); }
-  .ki-cell.gated .ki-status-dot { background: var(--red-light); opacity: .6; }
+  .ki-cell.owned  .ki-status-dot { background: var(--green-light); }
+  .ki-cell.ready  .ki-status-dot { background: var(--gold-light); }
+  .ki-cell.doable .ki-status-dot { background: var(--text-muted); }
+  .ki-cell.locked .ki-status-dot { background: transparent; }   /* padlock carries the meaning instead */
+
+  /* padlock badge, bottom-right (only on locked tiles) */
+  .ki-lock { position: absolute; bottom: 5px; right: 6px; font-size: 11px; line-height: 1; opacity: .55; filter: grayscale(1); }
 
   .ki-cell img { width: 70%; height: 70%; object-fit: contain; image-rendering: pixelated; }
   .ki-cell:not(.owned) img { filter: grayscale(1) brightness(0.5); opacity: .35; }
-  .ki-cell.obtainable img { filter: grayscale(0.3) brightness(0.85); opacity: .7; }
+  .ki-cell.ready img { filter: grayscale(0.3) brightness(0.85); opacity: .7; }
 
   /* fallback label shown when the icon fails to load */
   .ki-fallback { font-size: 10px; line-height: 1.2; color: var(--text-muted); text-align: center; word-break: break-word; }
   .ki-cell.owned .ki-fallback { color: var(--green-light); }
+
 
   /* hover tooltip */
   .ki-cell .ki-tip {
@@ -773,6 +779,13 @@ function hasQuestCape() {
   return total > 0 && questCount() >= total;
 }
 
+// ToA capability — "Into the Tombs" miniquest requires a full raid clear, so its
+// completion proves the account can actually do ToA (gear/stats already implied).
+// Used as the hard gate for any ToA-farmed item. Defined once, reused everywhere.
+function hasToACapability() {
+  return hasQuest('Into the Tombs');
+}
+
 // ─── Reliable boosts only (#nostews) — verified during planning ───────────────
 // 'amount' is the LEVEL boost granted. One boost at a time (no stacking), except
 // saw+tea which are an invisible(+3) + visible(+3) pair that legitimately stack.
@@ -834,7 +847,19 @@ function reqOther(label, met) {
   return { label, status: met ? 'met' : 'unmet' };
 }
 
-// ─── Activity definitions ─────────────────────────────────────────────────────
+// OR-group: passes if ANY listed item is owned (e.g. "any acceptable ranged weapon").
+// Used in soft-req sets where several alternatives satisfy the same need.
+function reqAnyItem(label, names) {
+  const met = names.some(n => hasItem(n));
+  return { label, status: met ? 'met' : 'unmet' };
+}
+
+// Evaluate a plain reqs array (no activity wrapper) -> true if all met/boost.
+function reqsAllPass(reqsFn) {
+  if (!reqsFn) return true; // no reqs defined = nothing blocking
+  return reqsFn().every(r => r.status === 'met' || r.status === 'boost');
+}
+
 function getActivities() {
   const questCape = hasQuestCape();
 
@@ -1449,13 +1474,26 @@ function ownedVariant(item) {
 // Reqs reuse the planner's req builders (reqStat/reqQuest/reqOther/...) and are
 // scored by the same evaluateActivity engine, so the two views stay consistent.
 // Items with no reqs defined fall back to a simple owned/gated split.
+// Four-state cascade (first hit wins):
+//   'owned'  — in bank/equipment (green)
+//   'ready'  — soft reqs met: realistically doable now (gold)
+//   'doable' — hard reqs met but soft not: possible, under-equipped (grey, no badge)
+//   'locked' — hard reqs unmet: can't attempt yet (grey + padlock)
+// Back-compat: an item may use `reqs` (treated as soft, no separate hard gate),
+// or the richer `hard` / `soft` pair. Capability tiles never reach 'owned'.
 function keyItemStatus(item) {
   if (ownsKeyItem(item)) return 'owned';
-  if (!item.reqs) return 'gated';
-  // Wrap the item's reqs in an activity-shaped object and reuse the engine.
-  const evaluated = evaluateActivity({ reqs: item.reqs });
-  // 'unlocked' from the engine means all reqs met (boosts count) -> obtainable.
-  return evaluated.status === 'unlocked' ? 'obtainable' : 'gated';
+
+  // Resolve which req sets exist. `reqs` (legacy) maps to soft.
+  const softFn = item.soft || item.reqs || null;
+  const hardFn = item.hard || null;
+
+  const hardPass = reqsAllPass(hardFn);   // no hard set defined => passes
+  const softPass = reqsAllPass(softFn);   // no soft set defined => passes
+
+  if (!hardPass) return 'locked';          // a hard gate is unmet
+  if (softPass) return 'ready';            // soft met (or none) => ready
+  return 'doable';                         // hard met, soft unmet
 }
 
 function switchView(view, btn) {
@@ -1469,7 +1507,7 @@ function renderKeyItems() {
   const grid = document.getElementById('ki-grid');
   if (!grid) return;
 
-  let owned = 0, obtainable = 0;
+  let owned = 0, ready = 0;
   // Sort by accessibility (ascending). Stable: equal scores keep catalogue order.
   // Universal layout — same for every account; only the colour overlay is personal.
   const ordered = KEY_ITEMS
@@ -1479,32 +1517,36 @@ function renderKeyItems() {
   grid.innerHTML = ordered.map(item => {
     const status = keyItemStatus(item);
     if (status === 'owned') owned++;
-    else if (status === 'obtainable') obtainable++;
+    else if (status === 'ready') ready++;
 
     const iconName = ownedVariant(item) || item.img || item.name;
     const icon = wikiIcon(iconName);
     const fallbackIcon = wikiIconFallback(iconName);
 
-    // Tooltip second line: obtained / how-to-get / what's blocking it.
+    // Tooltip second line varies by state.
     let tipLine;
     if (status === 'owned') {
       tipLine = '✓ Obtained';
-    } else if (status === 'obtainable') {
-      tipLine = '◆ Obtainable now — ' + item.src;
-    } else if (item.reqs) {
-      // List the unmet reqs so the tooltip explains the gate.
-      const unmet = evaluateActivity({ reqs: item.reqs }).reqs
-        .filter(r => r.status === 'unmet' || r.status === 'close')
-        .map(r => r.label);
-      tipLine = (unmet.length ? '🔒 Needs: ' + unmet.join(', ') : item.src);
-    } else {
-      tipLine = item.src;
+    } else if (status === 'ready') {
+      tipLine = '◆ Ready now — ' + item.src;
+    } else if (status === 'doable') {
+      // Hard reqs met, soft not: list the soft gaps.
+      const softFn = item.soft || item.reqs;
+      const gaps = softFn ? softFn().filter(r => r.status !== 'met' && r.status !== 'boost').map(r => r.label) : [];
+      tipLine = (gaps.length ? '△ Doable, but: ' + gaps.join(', ') : '△ Doable — ' + item.src);
+    } else { // locked
+      const hardFn = item.hard;
+      const blockers = hardFn ? hardFn().filter(r => r.status === 'unmet').map(r => r.label) : [];
+      tipLine = (blockers.length ? '🔒 Locked: ' + blockers.join(', ') : '🔒 ' + item.src);
     }
+
+    const padlock = status === 'locked' ? '<span class="ki-lock">🔒</span>' : '';
 
     // Two-stage onerror: try /images/ first, then Special:FilePath, then text label.
     return `
       <div class="ki-cell ${status}">
         <span class="ki-status-dot"></span>
+        ${padlock}
         <img src="${icon}" alt="${item.name}"
              data-fallback="${fallbackIcon}"
              onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback');}else{this.style.display='none';this.nextElementSibling.style.display='block';}">
@@ -1517,7 +1559,7 @@ function renderKeyItems() {
   }).join('');
 
   const countEl = document.getElementById('ki-count');
-  if (countEl) countEl.textContent = `${owned} / ${KEY_ITEMS.length}` + (obtainable ? `  (+${obtainable} ready)` : '');
+  if (countEl) countEl.textContent = `${owned} / ${KEY_ITEMS.length}` + (ready ? `  (+${ready} ready)` : '');
 }
 
 function renderStats() {
