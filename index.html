@@ -854,6 +854,16 @@ function reqAnyItem(label, names) {
   return { label, status: met ? 'met' : 'unmet' };
 }
 
+// General OR-group: passes if ANY branch passes. Each branch is either a single
+// req object {status} or an array of req objects (AND'd within the branch).
+// e.g. Amulet of glory = (80 Craft AND 68 Magic) OR (83 Hunter).
+function reqAny(label, branches) {
+  const pass = b => Array.isArray(b)
+    ? b.every(r => r.status === 'met' || r.status === 'boost')
+    : (b.status === 'met' || b.status === 'boost');
+  return { label, status: branches.some(pass) ? 'met' : 'unmet' };
+}
+
 // Evaluate a plain reqs array (no activity wrapper) -> true if all met/boost.
 function reqsAllPass(reqsFn) {
   if (!reqsFn) return true; // no reqs defined = nothing blocking
