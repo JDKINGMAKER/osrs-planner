@@ -45,10 +45,14 @@ const KEY_ITEMS = [
     hard: () => [ reqOther('Quest: The Fremennik Trials (Waterbirth access)', hasQuest('The Fremennik Trials')) ] },
   { name: 'Salve amulet(ei)', access: 6,     src: 'Haunted Mine + Tarn diary + imbue', match: 'Salve amulet(ei)',
     hard: () => [ reqOther('Quest: Haunted Mine', hasQuest('Haunted Mine')), reqOther('Miniquest: Lair of Tarn Razorlor', hasQuest('Lair of Tarn Razorlor')) ] },
-  { name: 'Amulet of glory', access: 1.5,      src: 'Craft (80 Craft/68 Mag) or hunt (83 Hunter)', match: 'mulet of glory',
-    hard: () => [ reqAny('Craft (80 Craft+68 Mag) or hunt (83 Hunter)', [
+  { name: 'Amulet of glory', access: 1.5,      src: 'Craft (80 Craft/68 Mag), dragon impling (83 Hunt), or crystal impling (80 Hunt + SOTE)', match: 'mulet of glory',
+    // Icon prefers the eternal glory if owned (listed first); otherwise regular glory.
+    // `match` still governs ownership broadly (catches (t), charge states, etc.).
+    matchAny: ['Amulet of eternal glory', 'Amulet of glory'],
+    hard: () => [ reqAny('Craft / dragon impling / crystal impling', [
       [ reqStat('Crafting', 80), reqStat('Magic', 68) ],
-      reqStat('Hunter', 83)
+      reqStat('Hunter', 83),
+      [ reqStat('Hunter', 80), reqOther('Quest: Song of the Elves', hasQuest('Song of the Elves')) ]
     ]) ] },
   { name: 'Elite void (set)', access: 7.5,     src: 'Pest Control + Hard Western diary', img: 'Elite void top',
     matchAll: ['Elite void top', 'Elite void robe', 'Void knight gloves', 'Void melee helm'],
