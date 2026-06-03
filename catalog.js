@@ -114,7 +114,6 @@ const KEY_ITEMS = [
   { name: 'Dorgeshuun crossbow', access: 2.5,  src: 'Death to the Dorgeshuun', match: 'Dorgeshuun crossbow' },
   { name: 'Helm of neitiznot', access: 3.5,    src: 'The Fremennik Isles', match: 'elm of neitiznot' },
   { name: 'Fighter torso', access: 4,        src: 'Barbarian Assault', match: 'Fighter torso' },
-  { name: 'Obsidian cape', access: 3,        src: 'TzHaar (tokkul)', match: 'Obsidian cape' },
   { name: 'Infernal cape', access: 9,        src: 'The Inferno', match: 'Infernal cape' },
   { name: 'Slayer helmet', access: 5.5,        src: 'Slayer (combine masks)', img: 'Slayer helmet', matchAny: ['Slayer helmet (i)','Slayer helmet'] },
 
@@ -131,9 +130,17 @@ const KEY_ITEMS = [
     matchAll: ['Graceful hood','Graceful top','Graceful legs','Graceful gloves','Graceful boots','Graceful cape'] },
   { name: 'Rogue equipment', access: 3,      src: "Rogues' Den", img: 'Rogue mask',
     matchAll: ['Rogue mask','Rogue top','Rogue trousers','Rogue gloves','Rogue boots'] },
-  { name: 'Anglers outfit', access: 4.5,       src: 'Fishing Trawler / Tempoross upgrade', img: 'Angler hat',
-    matchAny: ['Spirit angler top','Angler top','Spirit angler hat','Angler hat'],
-    matchAll: ['Angler hat','Angler top','Angler waders','Angler boots'] },
+  { name: 'Anglers outfit', access: 4.5,       src: 'Fishing Trawler (base) / Tempoross (spirit upgrade)', img: 'Angler hat',
+    // Icon prefers spirit pieces when owned (listed first). Head slot is "headband"
+    // for spirit, "hat" for base — note the different name.
+    matchAny: ['Spirit angler headband','Spirit angler top','Angler hat','Angler top'],
+    // Each slot satisfied by base OR spirit variant.
+    matchAll: [
+      ['Spirit angler headband','Angler hat'],
+      ['Spirit angler top','Angler top'],
+      ['Spirit angler waders','Angler waders'],
+      ['Spirit angler boots','Angler boots'],
+    ] },
   { name: 'Prospector kit', access: 4,       src: 'Motherlode Mine (nuggets)', img: 'Prospector helmet',
     matchAll: ['Prospector helmet','Prospector jacket','Prospector legs','Prospector boots'] },
   { name: "Smiths uniform", access: 5,       src: 'Giants Foundry', img: 'Smiths tunic',
@@ -153,8 +160,12 @@ const KEY_ITEMS = [
     matchAll: ["Zealot's helm","Zealot's robe top","Zealot's robe bottom","Zealot's boots"] },
 
   // ════════ WAVE 3 — QoL / UTILITY ════════
-  { name: 'Ardougne cloak', access: 4.5,       src: 'Ardougne Diary', img: 'Ardougne cloak 4', match: 'Ardougne cloak' },
-  { name: 'Varrock armour', access: 4,       src: 'Varrock Diary', img: 'Varrock armour 3', match: 'Varrock armour' },
+  { name: 'Ardougne cloak', access: 4.5,       src: 'Ardougne Diary', match: 'Ardougne cloak',
+    // Icon follows the highest tier owned (listed best-first).
+    matchAny: ['Ardougne cloak 4','Ardougne cloak 3','Ardougne cloak 2','Ardougne cloak 1'] },
+  { name: 'Varrock armour', access: 4,       src: 'Varrock Diary', match: 'Varrock armour',
+    // Icon follows the highest tier owned (listed best-first).
+    matchAny: ['Varrock armour 4','Varrock armour 3','Varrock armour 2','Varrock armour 1'] },
   { name: 'Tackle box', access: 4.5,           src: 'Tempoross', match: 'Tackle box' },
   { name: 'Fish barrel', access: 4.5,          src: 'Tempoross', img: 'Fish barrel', matchAny: ['Fish sack barrel','Fish barrel'] },
   { name: 'Coal bag', access: 4,             src: 'Motherlode Mine / Prospector', match: 'Coal bag' },
@@ -186,16 +197,16 @@ const KEY_ITEMS = [
     reqs: () => [ reqStatBoostable('Construction', 90, 'construction_saw_tea'), reqStatBoostable('Herblore', 87, 'crafting_pie') ] },
   { name: 'Bones to Peaches', access: 3.5,     src: 'MTA (Telekinetic + points)', capability: true, img: 'Peach',
     reqs: () => [ reqStat('Magic', 60) ] },
-  { name: 'Saradomin brew', access: 4,       src: '81 Herblore (toadflax + crushed nest)', capability: true, img: 'Saradomin brew(4)',
-    reqs: () => [ reqStat('Herblore', 81) ] },
-  { name: 'Super combat potion', access: 6,  src: '90 Herblore', capability: true, img: 'Super combat potion(4)',
-    reqs: () => [ reqStat('Herblore', 90) ] },
-  { name: 'Super restore', access: 3.5,        src: '63 Herblore', capability: true, img: 'Super restore(4)',
-    reqs: () => [ reqStat('Herblore', 63) ] },
-  { name: 'Prayer potion', access: 2,        src: '38 Herblore', capability: true, img: 'Prayer potion(4)',
-    reqs: () => [ reqStat('Herblore', 38) ] },
-  { name: 'Stamina potion', access: 4.5,       src: '77 Herblore', capability: true, img: 'Stamina potion(4)',
-    reqs: () => [ reqStat('Herblore', 77) ] },
+  { name: 'Saradomin brew', access: 4,       src: '81 Herblore — or held from drops', img: 'Saradomin brew(4)', match: 'Saradomin brew',
+    soft: () => [ reqStatBoostable('Herblore', 81, 'botanical_pie') ] },
+  { name: 'Super combat potion', access: 6,  src: '90 Herblore — or held from drops', img: 'Super combat potion(4)', match: 'Super combat potion',
+    soft: () => [ reqStatBoostable('Herblore', 90, 'botanical_pie') ] },
+  { name: 'Super restore', access: 3.5,        src: '63 Herblore — or held from drops', img: 'Super restore(4)', match: 'Super restore',
+    soft: () => [ reqStatBoostable('Herblore', 63, 'botanical_pie') ] },
+  { name: 'Prayer potion', access: 2,        src: '38 Herblore — or held from drops', img: 'Prayer potion(4)', match: 'Prayer potion',
+    soft: () => [ reqStatBoostable('Herblore', 38, 'botanical_pie') ] },
+  { name: 'Stamina potion', access: 4.5,       src: '77 Herblore — or held from drops', img: 'Stamina potion(4)', match: 'Stamina potion',
+    soft: () => [ reqStatBoostable('Herblore', 77, 'botanical_pie') ] },
 
   // ════════ WAVE 4b — SKILLCAPES (QoL-important only) ════════
   { name: 'Crafting cape', access: 7.5,        src: '99 Crafting', img: 'Crafting cape',
