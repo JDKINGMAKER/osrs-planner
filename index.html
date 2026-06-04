@@ -1464,13 +1464,31 @@ function wikiIconFallback(itemName) {
 
 function ownsKeyItem(item) {
   if (item.capability) return false; // access tiles are never "owned"
-  // matchAll: every slot must be owned. A slot is a string, OR an array of
-  // alternatives (slot satisfied if ANY is owned) — e.g. base vs upgraded piece.
+  // matchNot: exclusion terms. If any are present they DON'T count toward owning
+  // this tile (e.g. "Dragon boots ornament kit" must not satisfy "Dragon boots").
+  // We check exclusions by requiring at least one matching item that is NOT an excluded one.
+  const owns = (name) => hasItemExcluding(name, item.matchNot);
+
   if (item.matchAll) return item.matchAll.every(slot =>
-    Array.isArray(slot) ? slot.some(n => hasItem(n)) : hasItem(slot)
+    Array.isArray(slot) ? slot.some(n => owns(n)) : owns(slot)
   );
-  if (item.matchAny) return item.matchAny.some(m => hasItem(m));
-  return hasItem(item.match || item.name);
+  if (item.matchAny) return item.matchAny.some(m => owns(m));
+  return owns(item.match || item.name);
+}
+
+// Like hasItem, but ignores any owned item whose name contains an excluded term.
+// excl is an optional array of substrings to treat as "not this item".
+function hasItemExcluding(itemName, excl) {
+  const searchName = itemName.toLowerCase();
+  const exclude = (excl || []).map(e => e.toLowerCase());
+  const allItems = [];
+  if (state.bank) allItems.push(...state.bank.items);
+  if (state.equipment) allItems.push(...state.equipment.items);
+  return allItems.some(i => {
+    const n = i.name.toLowerCase();
+    if (!n.includes(searchName)) return false;
+    return !exclude.some(e => n.includes(e)); // reject if it's an excluded variant
+  });
 }
 
 // Returns the specific variant name the player owns, so the icon can follow it

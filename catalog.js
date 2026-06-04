@@ -82,7 +82,9 @@ const KEY_ITEMS = [
   { name: 'Arkan blade', access: 5,          src: 'The Final Dawn (quest)' },
   { name: 'Zombie axe', access: 5,           src: 'Armoured zombies (broken axe)' },
   { name: 'Warped sceptre', access: 4.5,       src: 'Warped creatures (56 Slayer)', match: 'Warped sceptre' },
-  { name: 'Dragon boots', access: 4,         src: 'Spiritual mages' },
+  { name: 'Dragon boots', access: 4,         src: 'Spiritual mages', match: 'Dragon boots',
+    // Exclude the cosmetic kit, which contains the substring "Dragon boots".
+    matchNot: ['ornament kit'] },
   { name: 'Trident of the seas', access: 5,  src: 'Cave krakens / Kraken boss', match: 'rident of the seas' },
   { name: 'Dragon axe', access: 4.5,           src: 'Dagannoth Kings / WC guild', matchAny: ['Dragon axe', 'Dragon felling axe'] },
   // matchAny: owned if ANY variant is held. Note hasItem() is already substring-based,
