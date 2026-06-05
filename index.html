@@ -254,6 +254,13 @@
   .ki-tab.active { border-color: var(--gold); color: var(--gold-light); background: rgba(201,168,76,0.08); }
   .ki-tab .ki-tab-count { color: var(--text-muted); font-size: 12px; margin-left: 4px; }
 
+  /* Clickable (has a source group to drill into) */
+  .ki-cell.ki-clickable { cursor: pointer; }
+  .ki-cell.ki-clickable:hover { border-color: var(--gold); }
+  .ki-source-mark { position: absolute; bottom: 5px; left: 6px; font-size: 11px; color: var(--text-muted); opacity: .5; }
+  .ki-cell.ki-clickable:hover .ki-source-mark { opacity: .9; color: var(--gold-light); }
+  .ki-source-crumb { font-family: 'RuneScape UF Regular', serif; font-size: 14px; color: var(--gold-light); padding: 5px 4px; }
+
   .ki-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -1585,6 +1592,19 @@ function switchView(view, btn) {
 
 // Active category filter for the Key Items board. null = "All".
 let kiActiveCategory = null;
+// Active source drill-in (set when a tile with a `source` is clicked). null = not drilled in.
+let kiActiveSource = null;
+
+function setKeySource(source) {
+  kiActiveSource = source;
+  renderKeyTabs();
+  renderKeyItems();
+}
+function clearKeySource() {
+  kiActiveSource = null;
+  renderKeyTabs();
+  renderKeyItems();
+}
 
 // Canonical category list + display order for the tab bar.
 const KI_CATEGORIES = [
@@ -1595,6 +1615,15 @@ const KI_CATEGORIES = [
 function renderKeyTabs() {
   const bar = document.getElementById('ki-tabs');
   if (!bar) return;
+
+  // Drilled into a source: show a breadcrumb back to the full board.
+  if (kiActiveSource) {
+    bar.innerHTML = `
+      <button class="ki-tab" onclick="clearKeySource()">← All items</button>
+      <span class="ki-source-crumb">Source: ${kiActiveSource}</span>`;
+    return;
+  }
+
   // Count tiles per category for the little badge.
   const counts = {};
   KEY_ITEMS.forEach(it => (it.tags || []).forEach(t => counts[t] = (counts[t] || 0) + 1));
@@ -1612,6 +1641,7 @@ function renderKeyTabs() {
 
 function setKeyCategory(cat) {
   kiActiveCategory = cat;
+  kiActiveSource = null; // leaving any source drill-in
   renderKeyTabs();
   renderKeyItems();
 }
@@ -1623,10 +1653,13 @@ function renderKeyItems() {
   let owned = 0, ready = 0;
   // Sort by accessibility (ascending). Stable: equal scores keep catalogue order.
   // Universal layout — same for every account; only the colour overlay is personal.
-  // Filter by active category (null = All); global sort order is preserved.
+  // Filter: source drill-in takes precedence; else category (null = All).
+  // Global sort order is preserved in all views.
   const ordered = KEY_ITEMS
     .map((item, i) => ({ item, i }))
-    .filter(x => !kiActiveCategory || (x.item.tags || []).includes(kiActiveCategory))
+    .filter(x => kiActiveSource
+      ? x.item.source === kiActiveSource
+      : (!kiActiveCategory || (x.item.tags || []).includes(kiActiveCategory)))
     .sort((a, b) => ((a.item.access ?? 99) - (b.item.access ?? 99)) || (a.i - b.i))
     .map(x => x.item);
   grid.innerHTML = ordered.map(item => {
@@ -1661,12 +1694,18 @@ function renderKeyItems() {
     }
 
     const padlock = status === 'locked' ? '<span class="ki-lock">🔒</span>' : '';
+    // A tile with a `source` (and not already drilled into it) is clickable to
+    // open that source's group. Suppress the link when already viewing that source.
+    const clickable = item.source && kiActiveSource !== item.source;
+    const clickAttr = clickable ? ` onclick="setKeySource('${item.source.replace(/'/g, "\\'")}')"` : '';
+    const sourceDot = clickable ? '<span class="ki-source-mark" title="View source group">⊕</span>' : '';
 
     // Two-stage onerror: try /images/ first, then Special:FilePath, then text label.
     return `
-      <div class="ki-cell ${status}">
+      <div class="ki-cell ${status}${clickable ? ' ki-clickable' : ''}"${clickAttr}>
         <span class="ki-status-dot"></span>
         ${padlock}
+        ${sourceDot}
         <img src="${icon}" alt="${item.name}"
              data-fallback="${fallbackIcon}"
              onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback');}else{this.style.display='none';this.nextElementSibling.style.display='block';}">
