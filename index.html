@@ -598,6 +598,7 @@
       <div class="fsg-item" id="fsg-bank">🏦 bank.json <span class="fsg-badge optional">Optional</span></div>
       <div class="fsg-item" id="fsg-equipment">🛡️ equipment.json <span class="fsg-badge optional">Optional</span></div>
       <div class="fsg-item" id="fsg-combat">🗡️ combat_achievements.json <span class="fsg-badge optional">Optional</span></div>
+      <div class="fsg-item" id="fsg-collectionLog">📕 collection_log.json <span class="fsg-badge optional">Optional</span></div>
     </div>
 
     <button class="load-btn" id="analyse-btn" onclick="runAnalysis()" disabled>Analyse Character</button>
@@ -681,6 +682,7 @@ const FILE_MAP = {
   'bank': 'bank',
   'equipment': 'equipment',
   'combat_achievements': 'combat',
+  'collection_log': 'collectionLog',
   'inventory': null,      // loaded but not used yet
   'seed_vault': null,
 };
@@ -763,6 +765,24 @@ function hasItem(itemName) {
   if (state.bank) allItems.push(...state.bank.items);
   if (state.equipment) allItems.push(...state.equipment.items);
   return allItems.some(i => i.name.toLowerCase().includes(searchName));
+}
+
+// Collection log = an "ever obtained" signal (survives using/dropping/alching).
+// POSITIVE-ONLY: a true is trustworthy; absence is ambiguous (item not obtained
+// OR that log page not yet scraped in-game). Matches by exact name (case-insens),
+// since log item names are precise. Searches every tab/activity.
+function hasCollectionLogItem(itemName) {
+  if (!state.collectionLog || !state.collectionLog.tabs) return false;
+  const target = itemName.toLowerCase();
+  for (const tab of Object.values(state.collectionLog.tabs)) {
+    for (const activity of Object.values(tab)) {
+      if (!activity.items) continue;
+      for (const it of activity.items) {
+        if (it.obtained && it.name.toLowerCase() === target) return true;
+      }
+    }
+  }
+  return false;
 }
 
 function questCount() {
@@ -1464,6 +1484,13 @@ function wikiIconFallback(itemName) {
 
 function ownsKeyItem(item) {
   if (item.capability) return false; // access tiles are never "owned"
+  // Collection-log fallback: explicit clogItem name(s) count as owned if
+  // ever-obtained, even when not currently banked (used consumables, permanent
+  // unlocks like Bones to Peaches). Positive-only signal.
+  if (item.clogItem) {
+    const names = Array.isArray(item.clogItem) ? item.clogItem : [item.clogItem];
+    if (names.some(n => hasCollectionLogItem(n))) return true;
+  }
   // matchNot: exclusion terms. If any are present they DON'T count toward owning
   // this tile (e.g. "Dragon boots ornament kit" must not satisfy "Dragon boots").
   // We check exclusions by requiring at least one matching item that is NOT an excluded one.
