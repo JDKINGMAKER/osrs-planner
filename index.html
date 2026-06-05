@@ -242,6 +242,18 @@
   .ki-count { font-family: 'RuneScape UF Regular', serif; font-size: 18px; color: var(--green-light); }
   .ki-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-style: italic; }
 
+  /* Category tab bar */
+  .ki-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .ki-tab {
+    font-family: 'RuneScape UF Regular', serif; font-size: 14px;
+    padding: 5px 12px; border: 1px solid var(--border); border-radius: 5px;
+    background: rgba(255,255,255,0.02); color: var(--text-dim); cursor: pointer;
+    transition: all .15s; white-space: nowrap;
+  }
+  .ki-tab:hover { border-color: var(--border-strong); color: var(--text); }
+  .ki-tab.active { border-color: var(--gold); color: var(--gold-light); background: rgba(201,168,76,0.08); }
+  .ki-tab .ki-tab-count { color: var(--text-muted); font-size: 12px; margin-left: 4px; }
+
   .ki-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -651,6 +663,7 @@
         <span class="ki-count" id="ki-count">— / —</span>
       </div>
       <p class="ki-sub">Ironman progression chase items. Greyed = not yet obtained; full colour = in bank or equipped. Hover for how to get it.</p>
+      <div class="ki-tabs" id="ki-tabs"></div>
       <div class="ki-grid" id="ki-grid"></div>
     </div>
 
@@ -1462,6 +1475,7 @@ function runAnalysis() {
 
   renderStats();
   renderCards();
+  renderKeyTabs();
   renderKeyItems();
 }
 
@@ -1569,6 +1583,39 @@ function switchView(view, btn) {
   document.getElementById('view-keyitems').style.display = (view === 'keyitems') ? 'block' : 'none';
 }
 
+// Active category filter for the Key Items board. null = "All".
+let kiActiveCategory = null;
+
+// Canonical category list + display order for the tab bar.
+const KI_CATEGORIES = [
+  'Skilling & Minigames', 'Boss Drops', 'Slayer Unlocks',
+  'Consumables', 'Quest Rewards', 'Diary Rewards', 'Raids Loot',
+];
+
+function renderKeyTabs() {
+  const bar = document.getElementById('ki-tabs');
+  if (!bar) return;
+  // Count tiles per category for the little badge.
+  const counts = {};
+  KEY_ITEMS.forEach(it => (it.tags || []).forEach(t => counts[t] = (counts[t] || 0) + 1));
+
+  const tab = (label, value, count) => `
+    <button class="ki-tab ${kiActiveCategory === value ? 'active' : ''}"
+            onclick="setKeyCategory(${value === null ? 'null' : `'${value.replace(/'/g, "\\'")}'`})">
+      ${label}${count != null ? `<span class="ki-tab-count">${count}</span>` : ''}
+    </button>`;
+
+  bar.innerHTML =
+    tab('All', null, KEY_ITEMS.length) +
+    KI_CATEGORIES.filter(c => counts[c]).map(c => tab(c, c, counts[c])).join('');
+}
+
+function setKeyCategory(cat) {
+  kiActiveCategory = cat;
+  renderKeyTabs();
+  renderKeyItems();
+}
+
 function renderKeyItems() {
   const grid = document.getElementById('ki-grid');
   if (!grid) return;
@@ -1576,8 +1623,10 @@ function renderKeyItems() {
   let owned = 0, ready = 0;
   // Sort by accessibility (ascending). Stable: equal scores keep catalogue order.
   // Universal layout — same for every account; only the colour overlay is personal.
+  // Filter by active category (null = All); global sort order is preserved.
   const ordered = KEY_ITEMS
     .map((item, i) => ({ item, i }))
+    .filter(x => !kiActiveCategory || (x.item.tags || []).includes(kiActiveCategory))
     .sort((a, b) => ((a.item.access ?? 99) - (b.item.access ?? 99)) || (a.i - b.i))
     .map(x => x.item);
   grid.innerHTML = ordered.map(item => {
@@ -1630,7 +1679,7 @@ function renderKeyItems() {
   }).join('');
 
   const countEl = document.getElementById('ki-count');
-  if (countEl) countEl.textContent = `${owned} / ${KEY_ITEMS.length}` + (ready ? `  (+${ready} ready)` : '');
+  if (countEl) countEl.textContent = `${owned} / ${ordered.length}` + (ready ? `  (+${ready} ready)` : '');
 }
 
 function renderStats() {
