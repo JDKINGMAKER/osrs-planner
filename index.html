@@ -266,6 +266,13 @@
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
     gap: 10px;
   }
+  /* When sectioned, the outer #ki-grid stops being a grid and stacks sections. */
+  .ki-grid.ki-grid-sectioned { display: block; }
+  .ki-section { margin-bottom: 22px; }
+  .ki-section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+  .ki-section-name { font-family: 'RuneScape UF Regular', serif; font-size: 17px; color: var(--gold-light); }
+  .ki-section-count { font-size: 13px; color: var(--text-muted); }
+  .ki-section .ki-grid { display: grid; }
   .ki-cell {
     aspect-ratio: 1 / 1;
     background: var(--bg4);
@@ -1650,11 +1657,6 @@ function renderKeyItems() {
   const grid = document.getElementById('ki-grid');
   if (!grid) return;
 
-  let owned = 0, ready = 0;
-  // Sort by accessibility (ascending). Stable: equal scores keep catalogue order.
-  // Universal layout — same for every account; only the colour overlay is personal.
-  // Filter: source drill-in takes precedence; else category (null = All).
-  // Global sort order is preserved in all views.
   const ordered = KEY_ITEMS
     .map((item, i) => ({ item, i }))
     .filter(x => kiActiveSource
@@ -1662,46 +1664,87 @@ function renderKeyItems() {
       : (!kiActiveCategory || (x.item.tags || []).includes(kiActiveCategory)))
     .sort((a, b) => ((a.item.access ?? 99) - (b.item.access ?? 99)) || (a.i - b.i))
     .map(x => x.item);
-  grid.innerHTML = ordered.map(item => {
-    const status = keyItemStatus(item);
-    if (status === 'owned') owned++;
-    else if (status === 'ready') ready++;
 
-    const iconName = ownedVariant(item) || item.img || item.name;
-    const icon = wikiIcon(iconName);
-    const fallbackIcon = wikiIconFallback(iconName);
+  let owned = 0, ready = 0;
+  const tally = item => {
+    const s = keyItemStatus(item);
+    if (s === 'owned') owned++; else if (s === 'ready') ready++;
+  };
+  ordered.forEach(tally);
 
-    // Tooltip second line varies by state.
-    let tipLine;
-    if (status === 'owned') {
-      tipLine = '✓ Obtained';
-    } else if (status === 'ready') {
-      tipLine = '◆ Ready now — ' + item.src;
-    } else if (status === 'boostable') {
-      // Soft met only via a reliable boost.
-      const softFn = item.soft || item.reqs;
-      const boosts = softFn ? softFn().filter(r => r.status === 'boost').map(r => r.label) : [];
-      tipLine = '⚗ Ready with boost — ' + (boosts.length ? boosts.join(', ') : item.src);
-    } else if (status === 'doable') {
-      // Hard reqs met, soft not: list the soft gaps.
-      const softFn = item.soft || item.reqs;
-      const gaps = softFn ? softFn().filter(r => r.status !== 'met' && r.status !== 'boost').map(r => r.label) : [];
-      tipLine = (gaps.length ? '△ Doable, but: ' + gaps.join(', ') : '△ Doable — ' + item.src);
-    } else { // locked
-      const hardFn = item.hard;
-      const blockers = hardFn ? hardFn().filter(r => r.status === 'unmet').map(r => r.label) : [];
-      tipLine = (blockers.length ? '🔒 Locked: ' + blockers.join(', ') : '🔒 ' + item.src);
+  // SECTIONED view: inside a category (but not the All board, and not a source
+  // drill-in), group the items by `source` activity with section headers.
+  // Source-less items collect into a trailing "Other" section.
+  const sectioned = kiActiveCategory && !kiActiveSource;
+  if (sectioned) {
+    const groups = new Map();          // source -> [items], insertion order = access order
+    const other = [];
+    ordered.forEach(item => {
+      if (!item.source) { other.push(item); return; }
+      if (!groups.has(item.source)) groups.set(item.source, []);
+      groups.get(item.source).push(item);
+    });
+    let html = '';
+    for (const [source, items] of groups) {
+      const got = items.filter(i => keyItemStatus(i) === 'owned').length;
+      html += `<div class="ki-section">
+        <div class="ki-section-head"><span class="ki-section-name">${source}</span>
+        <span class="ki-section-count">${got}/${items.length}</span></div>
+        <div class="ki-grid">${items.map(keyTileHTML).join('')}</div></div>`;
     }
+    if (other.length) {
+      const got = other.filter(i => keyItemStatus(i) === 'owned').length;
+      html += `<div class="ki-section">
+        <div class="ki-section-head"><span class="ki-section-name">Other</span>
+        <span class="ki-section-count">${got}/${other.length}</span></div>
+        <div class="ki-grid">${other.map(keyTileHTML).join('')}</div></div>`;
+    }
+    grid.classList.add('ki-grid-sectioned');
+    grid.innerHTML = html;
+  } else {
+    grid.classList.remove('ki-grid-sectioned');
+    grid.innerHTML = ordered.map(keyTileHTML).join('');
+  }
 
-    const padlock = status === 'locked' ? '<span class="ki-lock">🔒</span>' : '';
-    // A tile with a `source` (and not already drilled into it) is clickable to
-    // open that source's group. Suppress the link when already viewing that source.
-    const clickable = item.source && kiActiveSource !== item.source;
-    const clickAttr = clickable ? ` onclick="setKeySource('${item.source.replace(/'/g, "\\'")}')"` : '';
-    const sourceDot = clickable ? '<span class="ki-source-mark" title="View source group">⊕</span>' : '';
+  const countEl = document.getElementById('ki-count');
+  if (countEl) countEl.textContent = `${owned} / ${ordered.length}` + (ready ? `  (+${ready} ready)` : '');
+}
 
-    // Two-stage onerror: try /images/ first, then Special:FilePath, then text label.
-    return `
+// Builds the HTML for a single key-item tile (shared by flat + sectioned views).
+function keyTileHTML(item) {
+  const status = keyItemStatus(item);
+  const iconName = ownedVariant(item) || item.img || item.name;
+  const icon = wikiIcon(iconName);
+  const fallbackIcon = wikiIconFallback(iconName);
+
+  // Tooltip second line varies by state.
+  let tipLine;
+  if (status === 'owned') {
+    tipLine = '✓ Obtained';
+  } else if (status === 'ready') {
+    tipLine = '◆ Ready now — ' + item.src;
+  } else if (status === 'boostable') {
+    const softFn = item.soft || item.reqs;
+    const boosts = softFn ? softFn().filter(r => r.status === 'boost').map(r => r.label) : [];
+    tipLine = '⚗ Ready with boost — ' + (boosts.length ? boosts.join(', ') : item.src);
+  } else if (status === 'doable') {
+    const softFn = item.soft || item.reqs;
+    const gaps = softFn ? softFn().filter(r => r.status !== 'met' && r.status !== 'boost').map(r => r.label) : [];
+    tipLine = (gaps.length ? '△ Doable, but: ' + gaps.join(', ') : '△ Doable — ' + item.src);
+  } else { // locked
+    const hardFn = item.hard;
+    const blockers = hardFn ? hardFn().filter(r => r.status === 'unmet').map(r => r.label) : [];
+    tipLine = (blockers.length ? '🔒 Locked: ' + blockers.join(', ') : '🔒 ' + item.src);
+  }
+
+  const padlock = status === 'locked' ? '<span class="ki-lock">🔒</span>' : '';
+  // A tile with a `source` (and not already drilled into it) is clickable to
+  // open that source's group. Suppress the link when already viewing that source.
+  const clickable = item.source && kiActiveSource !== item.source;
+  const clickAttr = clickable ? ` onclick="setKeySource('${item.source.replace(/'/g, "\\'")}')"` : '';
+  const sourceDot = clickable ? '<span class="ki-source-mark" title="View source group">⊕</span>' : '';
+
+  return `
       <div class="ki-cell ${status}${clickable ? ' ki-clickable' : ''}"${clickAttr}>
         <span class="ki-status-dot"></span>
         ${padlock}
@@ -1715,10 +1758,6 @@ function renderKeyItems() {
           <span class="ki-tip-src">${tipLine}</span>
         </div>
       </div>`;
-  }).join('');
-
-  const countEl = document.getElementById('ki-count');
-  if (countEl) countEl.textContent = `${owned} / ${ordered.length}` + (ready ? `  (+${ready} ready)` : '');
 }
 
 function renderStats() {
