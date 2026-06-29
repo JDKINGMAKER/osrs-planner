@@ -20,6 +20,34 @@
  * (Number, 1-10 accessibility sort key). Add per item as we build those tabs.
  * ==========================================================================*/
 
+/* expandSet — generate a multi-piece kit as one curated set tile (big board)
+ * plus one section-only tile per piece. Returns an array to spread into KEY_ITEMS.
+ *
+ *   set:    display name of the whole kit (the big-board tile)
+ *   source: activity it groups under (section header)
+ *   tags:   category tag(s)
+ *   access: sort score (shared by set + pieces)
+ *   pieces: array of exact in-game piece names (canonical — from collection log)
+ *   img:    optional icon override for the set tile (defaults to first piece)
+ *   extra:  optional fields merged onto the SET tile (e.g. reqs, matchAny)
+ *
+ * The set tile owns via matchAll over the pieces; each piece tile owns via its
+ * own name (substring match). Piece tiles are show:'section'; set is show:'board'.
+ */
+function expandSet({ set, source, tags, access, pieces, img, extra = {} }) {
+  const setTile = {
+    name: set, source, tags, access, show: 'board',
+    img: img || pieces[0],
+    matchAll: pieces.slice(),
+    src: source,
+    ...extra,
+  };
+  const pieceTiles = pieces.map(p => ({
+    name: p, source, tags, access, show: 'section', match: p,
+  }));
+  return [setTile, ...pieceTiles];
+}
+
 const KEY_ITEMS = [
   { name: 'Fire cape', access: 5.5,            src: 'TzHaar Fight Cave',
     // No real entry gate (hard always passes). soft = realistic readiness for an early iron.
@@ -34,14 +62,14 @@ const KEY_ITEMS = [
   { name: 'Quest point cape', tags: ['Quest Rewards'], access: 6.5,     src: 'All quests complete', match: 'Quest point cape',
     hard: () => [ reqOther('All quests complete', hasQuestCape()) ] },
   { name: 'Rune pouch', tags: ['Skilling & Minigames'], access: 5,           src: 'Slayer / LMS / Wintertodt', match: 'Rune pouch' },
-  { name: 'Divine rune pouch', source: 'Tombs of Amascut', source: 'Tombs of Amascut', tags: ['Raids Loot'], access: 7.5,    src: 'Upgrade Rune pouch w/ Thread of Elidinis (ToA), 75 Craft', match: 'Divine rune pouch',
+  { name: 'Divine rune pouch', source: 'Tombs of Amascut', tags: ['Raids Loot'], access: 7.5,    src: 'Upgrade Rune pouch w/ Thread of Elidinis (ToA), 75 Craft', match: 'Divine rune pouch',
     hard: () => [ reqOther('ToA capability (Into the Tombs)', hasToACapability()), reqOther('Rune pouch owned', hasItem('Rune pouch')) ],
     soft: () => [ reqStatBoostable('Crafting', 75, 'crafting_pie') ] },
   { name: "Ava's accumulator", tags: ['Boss Drops', 'Quest Rewards'], access: 2.5,    src: 'Animal Magnetism',
     hard: () => [ reqOther('Quest: Animal Magnetism', hasQuest('Animal Magnetism')) ] },
   { name: "Ava's assembler", source: 'Vorkath', tags: ['Boss Drops', 'Quest Rewards'], access: 6.5,      src: 'Vorkath head + accumulator (needs DS2)',
     hard: () => [ reqOther("Ava's accumulator owned", hasItem("Ava's accumulator")), reqOther('Quest: Dragon Slayer II', hasQuest('Dragon Slayer II')) ] },
-  { name: 'Berserker ring (i)', source: 'Dagannoth Kings', source: 'Dagannoth Kings', tags: ['Boss Drops'], access: 6,   src: 'Dagannoth Rex (Waterbirth) + imbue', match: 'erserker ring (i)',
+  { name: 'Berserker ring (i)', source: 'Dagannoth Kings', tags: ['Boss Drops'], access: 6,   src: 'Dagannoth Rex (Waterbirth) + imbue', match: 'erserker ring (i)',
     hard: () => [ reqOther('Quest: The Fremennik Trials (Waterbirth access)', hasQuest('The Fremennik Trials')) ] },
   { name: 'Salve amulet(ei)', tags: ['Quest Rewards'], access: 6,     src: 'Haunted Mine + Tarn diary + imbue', match: 'Salve amulet(ei)',
     hard: () => [ reqOther('Quest: Haunted Mine', hasQuest('Haunted Mine')), reqOther('Miniquest: Lair of Tarn Razorlor', hasQuest('Lair of Tarn Razorlor')) ] },
@@ -54,15 +82,20 @@ const KEY_ITEMS = [
       reqStat('Hunter', 83),
       [ reqStat('Hunter', 80), reqOther('Quest: Song of the Elves', hasQuest('Song of the Elves')) ]
     ]) ] },
-  { name: 'Elite void (set)', source: 'Pest Control', tags: ['Diary Rewards', 'Skilling & Minigames'], access: 7.5,     src: 'Pest Control + Hard Western diary', img: 'Elite void top',
-    matchAll: ['Elite void top', 'Elite void robe', 'Void knight gloves', 'Void melee helm'],
-    reqs: () => [
-      reqOther('Base Void top owned', hasItem('Void knight top')),
-      reqOther('Base Void robe owned', hasItem('Void knight robe')),
-      reqOther('Hard Western Provinces diary', hasDiary('Western Provinces', 'hard')),
-      reqStat('Defence', 42), reqStat('Ranged', 42), reqStat('Magic', 42)
-    ] },
-  { name: 'Toxic blowpipe', source: 'Zulrah', source: 'Zulrah', tags: ['Boss Drops'], access: 6.5,       src: 'Zulrah', img: 'Toxic blowpipe', match: 'blowpipe',
+  ...expandSet({ set: 'Elite void (set)', source: 'Pest Control', tags: ['Diary Rewards', 'Skilling & Minigames'], access: 7.5, img: 'Elite void top',
+    pieces: ['Elite void top','Elite void robe','Void knight gloves','Void melee helm','Void mage helm','Void ranger helm'],
+    extra: {
+      // Set "owned" needs the core 4 (top/robe/gloves + one helm); pieces list above
+      // shows all helms in the section. Keep the curated matchAll + reqs.
+      matchAll: ['Elite void top','Elite void robe','Void knight gloves','Void melee helm'],
+      reqs: () => [
+        reqOther('Base Void top owned', hasItem('Void knight top')),
+        reqOther('Base Void robe owned', hasItem('Void knight robe')),
+        reqOther('Hard Western Provinces diary', hasDiary('Western Provinces', 'hard')),
+        reqStat('Defence', 42), reqStat('Ranged', 42), reqStat('Magic', 42)
+      ],
+    } }),
+  { name: 'Toxic blowpipe', source: 'Zulrah', tags: ['Boss Drops'], access: 6.5,       src: 'Zulrah', img: 'Toxic blowpipe', match: 'blowpipe',
     hard: () => [
       reqOther('Quest: Regicide (Zulrah access)', hasQuest('Regicide')),
       reqAny('80+ Ranged or 75+ Magic', [ reqStat('Ranged', 80), reqStat('Magic', 75) ]),
@@ -70,7 +103,7 @@ const KEY_ITEMS = [
     soft: () => [
       reqAnyItem('Zulrah weapon (Twinflame staff or Bowfa)', ['Twinflame staff','Bow of faerdhinen']),
     ] },
-  { name: 'Bow of faerdhinen', source: 'The Gauntlet', source: 'Corrupted Gauntlet', tags: ['Boss Drops'], access: 8,    src: 'Corrupted Gauntlet (seed)', img: 'Bow of faerdhinen (c)', match: 'aerdhinen',
+  { name: 'Bow of faerdhinen', source: 'Corrupted Gauntlet', tags: ['Boss Drops'], access: 8,    src: 'Corrupted Gauntlet (seed)', img: 'Bow of faerdhinen (c)', match: 'aerdhinen',
     hard: () => [ reqOther('Quest: Song of the Elves (Gauntlet access)', hasQuest('Song of the Elves')) ] },
   { name: 'Rune crossbow', access: 2.5,        src: 'Fletch (69 Fletching) / drops', match: 'Rune crossbow',
     hard: () => [ reqStat('Fletching', 69) ] },
@@ -78,48 +111,48 @@ const KEY_ITEMS = [
     reqs: () => [ reqStat('Attack', 60), reqOther('Quest: Monkey Madness I', hasQuest('Monkey Madness I')) ] },
   { name: 'Dragon defender', source: 'Warriors\' Guild', tags: ['Skilling & Minigames'], access: 4,      src: "Warriors' Guild",
     reqs: () => [ reqStat('Attack', 60), reqStat('Defence', 60), reqOther("Warriors' Guild access (combined 130+)", (getLevel('Attack') + getLevel('Strength')) >= 130) ] },
-  { name: 'Abyssal whip', source: 'Abyssal demons', source: 'Abyssal demons', tags: ['Slayer Unlocks'], access: 5.5,         src: 'Abyssal demons (85 Slayer)',
+  { name: 'Abyssal whip', source: 'Abyssal demons', tags: ['Slayer Unlocks'], access: 5.5,         src: 'Abyssal demons (85 Slayer)',
     hard: () => [ reqStat('Slayer', 85) ] },
   { name: 'Arkan blade', tags: ['Quest Rewards'], access: 5,          src: 'The Final Dawn (quest)' },
   { name: 'Zombie axe', tags: ['Quest Rewards'], access: 5,           src: 'Armoured zombies (broken axe)' },
-  { name: 'Warped sceptre', source: 'Warped creatures', source: 'Warped creatures', tags: ['Slayer Unlocks'], access: 4.5,       src: 'Warped creatures (56 Slayer + Path of Glouphrie)', match: 'Warped sceptre',
+  { name: 'Warped sceptre', source: 'Warped creatures', tags: ['Slayer Unlocks'], access: 4.5,       src: 'Warped creatures (56 Slayer + Path of Glouphrie)', match: 'Warped sceptre',
     hard: () => [ reqStat('Slayer', 56), reqOther('Quest: The Path of Glouphrie', hasQuest('The Path of Glouphrie')) ] },
-  { name: 'Dragon boots', source: 'Spiritual mages', source: 'Spiritual mages', tags: ['Slayer Unlocks'], access: 4,         src: 'Spiritual mages (83 Slayer)', match: 'Dragon boots',
+  { name: 'Dragon boots', source: 'Spiritual mages', tags: ['Slayer Unlocks'], access: 4,         src: 'Spiritual mages (83 Slayer)', match: 'Dragon boots',
     // Exclude the cosmetic kit, which contains the substring "Dragon boots".
     matchNot: ['ornament kit'],
     hard: () => [ reqStat('Slayer', 83) ] },
-  { name: 'Trident of the seas', source: 'Cave krakens', source: 'Cave krakens', tags: ['Slayer Unlocks'], access: 5,  src: 'Cave krakens (87 Slayer)', match: 'rident of the seas',
+  { name: 'Trident of the seas', source: 'Cave krakens', tags: ['Slayer Unlocks'], access: 5,  src: 'Cave krakens (87 Slayer)', match: 'rident of the seas',
     hard: () => [ reqStat('Slayer', 87) ] },
-  { name: 'Dragon axe', source: 'Dagannoth Kings', source: 'Dagannoth Kings', tags: ['Skilling & Minigames', 'Boss Drops'], access: 4.5,           src: 'Dagannoth Kings / WC guild', matchAny: ['Dragon axe', 'Dragon felling axe'] },
+  { name: 'Dragon axe', source: 'Dagannoth Kings', tags: ['Skilling & Minigames', 'Boss Drops'], access: 4.5,           src: 'Dagannoth Kings / WC guild', matchAny: ['Dragon axe', 'Dragon felling axe'] },
   // matchAny: owned if ANY variant is held. Note hasItem() is already substring-based,
   // so "(or)"/"(upgraded)" suffixes are caught by the base name — but listing them
   // makes the intent explicit and survives any future change to match logic.
-  { name: 'Dragon pickaxe', source: 'Calvar\'ion', source: 'Calvar\'ion', tags: ['Boss Drops', 'Skilling & Minigames'], access: 6.5,       src: "Calvar'ion (~1/358)", matchAny: ['Dragon pickaxe', 'Dragon pickaxe (or)', 'Dragon pickaxe (upgraded)'] },
+  { name: 'Dragon pickaxe', source: 'Calvar\'ion', tags: ['Boss Drops', 'Skilling & Minigames'], access: 6.5,       src: "Calvar'ion (~1/358)", matchAny: ['Dragon pickaxe', 'Dragon pickaxe (or)', 'Dragon pickaxe (upgraded)'] },
   // Collection-log completion, NOT a single bank item — see note. Detected only if
   // every Perilous Moons unique is currently in the bank/equipment (a weak proxy).
-  { name: 'Moons of Peril (log)', source: 'Perilous Moons', source: 'Perilous Moons', tags: ['Boss Drops'], access: 6, src: 'Perilous Moons — full collection log', img: 'Dual macuahuitl',
+  { name: 'Moons of Peril (log)', source: 'Perilous Moons', tags: ['Boss Drops'], access: 6, src: 'Perilous Moons — full collection log', img: 'Dual macuahuitl',
     matchAll: ['Blood moon helm','Blood moon chestplate','Blood moon tassets','Blue moon helm','Blue moon chestplate','Blue moon tassets','Eclipse moon helm','Eclipse moon chestplate','Eclipse moon tassets','Dual macuahuitl','Blue moon spear','Eclipse atlatl'] },
 
   // ════════ WAVE 1 — COMBAT GEAR ════════
   { name: 'Amulet of fury', access: 6,       src: 'Onyx + 90 Craft', match: 'mulet of fury' },
-  { name: 'Occult necklace', source: 'Smoke devils', source: 'Smoke devils', tags: ['Slayer Unlocks'], access: 5.5,      src: 'Smoke devils (93 Slayer)', match: 'Occult necklace',
+  { name: 'Occult necklace', source: 'Smoke devils', tags: ['Slayer Unlocks'], access: 5.5,      src: 'Smoke devils (93 Slayer)', match: 'Occult necklace',
     hard: () => [ reqStat('Slayer', 93) ] },
-  { name: 'Amulet of rancour', source: 'Araxxor', source: 'Araxxor', tags: ['Slayer Unlocks'], access: 9,    src: 'Araxxor components (92 Slayer)', match: 'mulet of rancour',
+  { name: 'Amulet of rancour', source: 'Araxxor', tags: ['Slayer Unlocks'], access: 9,    src: 'Araxxor components (92 Slayer)', match: 'mulet of rancour',
     hard: () => [ reqStat('Slayer', 92) ] },
-  { name: 'Primordial boots', source: 'Cerberus', source: 'Cerberus', tags: ['Slayer Unlocks'], access: 7,     src: 'Cerberus (91 Slayer)', match: 'Primordial boots',
+  { name: 'Primordial boots', source: 'Cerberus', tags: ['Slayer Unlocks'], access: 7,     src: 'Cerberus (91 Slayer)', match: 'Primordial boots',
     hard: () => [ reqStat('Slayer', 91) ] },
-  { name: 'Bandos godsword', source: 'God Wars: Bandos', source: 'God Wars: Bandos', tags: ['Boss Drops'], access: 7,      src: 'GWD — Bandos', match: 'Bandos godsword' },
-  { name: 'Zamorakian hasta', source: 'God Wars: Zamorak', source: 'God Wars: Zamorak', tags: ['Boss Drops'], access: 7,     src: 'GWD — Zamorak spear, reforge', match: 'Zamorakian hasta' },
-  { name: 'Dragon warhammer', source: 'Lizardman shamans', source: 'Lizardman shamans', tags: ['Slayer Unlocks'], access: 5.5,     src: 'Lizardman shamans' },
+  { name: 'Bandos godsword', source: 'God Wars: Bandos', tags: ['Boss Drops'], access: 7,      src: 'GWD — Bandos', match: 'Bandos godsword' },
+  { name: 'Zamorakian hasta', source: 'God Wars: Zamorak', tags: ['Boss Drops'], access: 7,     src: 'GWD — Zamorak spear, reforge', match: 'Zamorakian hasta' },
+  { name: 'Dragon warhammer', source: 'Lizardman shamans', tags: ['Slayer Unlocks'], access: 5.5,     src: 'Lizardman shamans' },
   { name: 'Dragon hunter lance', tags: ['Quest Rewards'], access: 7.5,  src: 'Vorkath (hydra claw path)', match: 'Dragon hunter lance' },
-  { name: 'Noxious halberd', source: 'Araxxor', source: 'Araxxor', tags: ['Slayer Unlocks'], access: 8.5,      src: 'Araxxor (92 Slayer)', match: 'Noxious halberd',
+  { name: 'Noxious halberd', source: 'Araxxor', tags: ['Slayer Unlocks'], access: 8.5,      src: 'Araxxor (92 Slayer)', match: 'Noxious halberd',
     hard: () => [ reqStat('Slayer', 92) ] },
   { name: 'Dragon dagger', access: 2,        src: 'Lost City', img: 'Dragon dagger', matchAny: ['Dragon dagger(p++)','Dragon dagger'] },
   { name: 'Bone dagger', tags: ['Quest Rewards'], access: 3,          src: 'The General (Chaos Tunnels)', img: 'Bone dagger', matchAny: ['Bone dagger(p++)','Bone dagger'] },
-  { name: 'Twinflame staff', source: 'Royal Titans', source: 'Royal Titans', tags: ['Boss Drops'], access: 6,      src: 'Royal Titans' },
-  { name: 'Emberlight', source: 'Tormented Demons', source: 'Tormented Demons', tags: ['Boss Drops', 'Quest Rewards'], access: 8,           src: 'Tormented Demons (synapse + Arclight)', match: 'Emberlight' },
-  { name: 'Scorching bow', source: 'Tormented Demons', source: 'Tormented Demons', tags: ['Boss Drops', 'Quest Rewards'], access: 8,        src: 'Tormented Demons (synapse + magic longbow)', match: 'Scorching bow' },
-  { name: 'Purging staff', source: 'Tormented Demons', source: 'Tormented Demons', tags: ['Boss Drops', 'Quest Rewards'], access: 8,        src: 'Tormented Demons (synapse + battlestaff)', match: 'Purging staff' },
+  { name: 'Twinflame staff', source: 'Royal Titans', tags: ['Boss Drops'], access: 6,      src: 'Royal Titans' },
+  { name: 'Emberlight', source: 'Tormented Demons', tags: ['Boss Drops', 'Quest Rewards'], access: 8,           src: 'Tormented Demons (synapse + Arclight)', match: 'Emberlight' },
+  { name: 'Scorching bow', source: 'Tormented Demons', tags: ['Boss Drops', 'Quest Rewards'], access: 8,        src: 'Tormented Demons (synapse + magic longbow)', match: 'Scorching bow' },
+  { name: 'Purging staff', source: 'Tormented Demons', tags: ['Boss Drops', 'Quest Rewards'], access: 8,        src: 'Tormented Demons (synapse + battlestaff)', match: 'Purging staff' },
   { name: "Hunters' sunlight crossbow", access: 7.5, src: 'Sunlight cbow (Hunter Guild)', match: 'unlight crossbow' },
   { name: 'Dorgeshuun crossbow', tags: ['Quest Rewards'], access: 2.5,  src: 'Death to the Dorgeshuun', match: 'Dorgeshuun crossbow' },
   { name: 'Helm of neitiznot', tags: ['Quest Rewards'], access: 3.5,    src: 'The Fremennik Isles', match: 'elm of neitiznot' },
@@ -127,53 +160,57 @@ const KEY_ITEMS = [
   { name: 'Infernal cape', access: 9,        src: 'The Inferno', match: 'Infernal cape' },
   { name: 'Slayer helmet', tags: ['Slayer Unlocks'], access: 5.5,        src: 'Slayer (combine masks)', img: 'Slayer helmet', matchAny: ['Slayer helmet (i)','Slayer helmet'] },
 
-  // ── combat armour SETS (matchAll; icon = head/iconic piece) ──
-  { name: 'Ancestral robes', source: 'Chambers of Xeric', source: 'Chambers of Xeric', tags: ['Raids Loot'], access: 8.5,      src: 'Chambers of Xeric', img: 'Ancestral hat',
-    matchAll: ['Ancestral hat','Ancestral robe top','Ancestral robe bottom'] },
-  { name: 'Virtus robes', source: 'Desert Treasure II', source: 'Desert Treasure II', tags: ['Boss Drops'], access: 8.5,         src: "Desert Treasure II bosses", img: 'Virtus mask',
-    matchAll: ['Virtus mask','Virtus robe top','Virtus robe bottom'] },
-  { name: 'Bloodbark armour', source: 'Blood altar (Runecraft)', tags: ['Skilling & Minigames'], access: 6,     src: 'Runecraft (blood runes / Vyrewatch)', img: 'Bloodbark helm',
-    matchAll: ['Bloodbark helm','Bloodbark body','Bloodbark legs'] },
+  // ── combat armour SETS ──
+  ...expandSet({ set: 'Ancestral robes', source: 'Chambers of Xeric', tags: ['Raids Loot'], access: 8.5, img: 'Ancestral hat',
+    pieces: ['Ancestral hat','Ancestral robe top','Ancestral robe bottom'] }),
+  ...expandSet({ set: 'Virtus robes', source: 'Desert Treasure II', tags: ['Boss Drops'], access: 8.5, img: 'Virtus mask',
+    pieces: ['Virtus mask','Virtus robe top','Virtus robe bottom'] }),
+  ...expandSet({ set: 'Bloodbark armour', source: 'Blood altar (Runecraft)', tags: ['Skilling & Minigames'], access: 6, img: 'Bloodbark helm',
+    pieces: ['Bloodbark helm','Bloodbark body','Bloodbark legs'] }),
 
   // ════════ WAVE 2 — SKILLING OUTFITS (sets; icon follows owned variant or head) ════════
-  { name: 'Graceful outfit', access: 3,      src: 'Agility (Marks of Grace)', img: 'Graceful hood',
-    matchAll: ['Graceful hood','Graceful top','Graceful legs','Graceful gloves','Graceful boots','Graceful cape'] },
-  { name: 'Rogue equipment', source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3,      src: "Rogues' Den", img: 'Rogue mask', show: 'board',
-    matchAll: ['Rogue mask','Rogue top','Rogue trousers','Rogue gloves','Rogue boots'] },
-  // Rogues' Den individual pieces — section-only (set tile represents them on the big board).
-  { name: 'Rogue mask',     source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue mask' },
-  { name: 'Rogue top',      source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue top' },
-  { name: 'Rogue trousers', source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue trousers' },
-  { name: 'Rogue gloves',   source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue gloves' },
-  { name: 'Rogue boots',    source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue boots' },
-  { name: 'Anglers outfit', source: 'Tempoross', tags: ['Skilling & Minigames'], access: 4.5,       src: 'Fishing Trawler (base) / Tempoross (spirit upgrade)', img: 'Angler hat',
-    // Icon prefers spirit pieces when owned (listed first). Head slot is "headband"
-    // for spirit, "hat" for base — note the different name.
-    matchAny: ['Spirit angler headband','Spirit angler top','Angler hat','Angler top'],
-    // Each slot satisfied by base OR spirit variant.
-    matchAll: [
-      ['Spirit angler headband','Angler hat'],
-      ['Spirit angler top','Angler top'],
-      ['Spirit angler waders','Angler waders'],
-      ['Spirit angler boots','Angler boots'],
-    ] },
-  { name: 'Prospector kit', source: 'Motherlode Mine', tags: ['Skilling & Minigames'], access: 4,       src: 'Motherlode Mine (nuggets)', img: 'Prospector helmet',
-    matchAll: ['Prospector helmet','Prospector jacket','Prospector legs','Prospector boots'] },
-  { name: "Smiths uniform", source: 'Giants\' Foundry', tags: ['Skilling & Minigames'], access: 5,       src: 'Giants Foundry', img: 'Smiths tunic',
-    matchAll: ['Smiths tunic','Smiths trousers','Smiths boots','Smiths gloves','Smiths hat'] },
-  { name: "Carpenter's outfit", source: 'Mahogany Homes', tags: ['Skilling & Minigames'], access: 4.5,   src: 'Mahogany Homes', img: "Carpenter's helmet",
-    matchAll: ["Carpenter's helmet","Carpenter's shirt","Carpenter's trousers","Carpenter's boots"] },
-  { name: 'Raiments of the Eye', source: 'Guardians of the Rift', tags: ['Skilling & Minigames'], access: 6.5,  src: 'Guardians of the Rift', img: 'Hat of the eye',
-    matchAll: ['Hat of the eye','Robe top of the eye','Robe bottoms of the eye','Boots of the eye'] },
-  { name: "Farmers outfit", source: 'Tithe Farm', tags: ['Skilling & Minigames'], access: 4.5,       src: 'Tithe Farm', img: "Farmer's strawhat",
-    matchAll: ["Farmer's strawhat",'Farmers jacket','Farmers boro trousers','Farmers boots'] },
-  { name: 'Guild hunter outfit', source: 'Hunter Guild', tags: ['Skilling & Minigames'], access: 5,  src: 'Hunter Guild (Quetzal)', img: 'Guild hunter headwear',
-    matchAll: ['Guild hunter headwear','Guild hunter top','Guild hunter legs','Guild hunter boots'] },
-  { name: 'Lumberjack outfit', source: 'Forestry', tags: ['Skilling & Minigames'], access: 5,    src: 'Forestry / Temple Trekking', img: 'Lumberjack hat',
-    matchAny: ['Forestry hat','Lumberjack hat','Forestry top','Lumberjack top'],
-    matchAll: ['Lumberjack hat','Lumberjack top','Lumberjack legs','Lumberjack boots'] },
-  { name: "Zealots robes", source: 'Shades of Mort\'ton', tags: ['Skilling & Minigames'], access: 5,        src: 'Shades of Mort\'ton', img: "Zealot's helm",
-    matchAll: ["Zealot's helm","Zealot's robe top","Zealot's robe bottom","Zealot's boots"] },
+  ...expandSet({ set: 'Graceful outfit', source: 'Agility', tags: ['Skilling & Minigames'], access: 3, img: 'Graceful hood',
+    pieces: ['Graceful hood','Graceful top','Graceful legs','Graceful gloves','Graceful boots','Graceful cape'] }),
+  ...expandSet({ set: 'Rogue equipment', source: "Rogues' Den", tags: ['Skilling & Minigames'], access: 3, img: 'Rogue mask',
+    pieces: ['Rogue mask','Rogue top','Rogue trousers','Rogue gloves','Rogue boots'] }),
+  ...expandSet({ set: 'Anglers outfit', source: 'Tempoross', tags: ['Skilling & Minigames'], access: 4.5, img: 'Angler hat',
+    // Section pieces use the SPIRIT names (the upgrade you actually chase); set
+    // tile owns via per-slot base-OR-spirit and icon follows the spirit variant.
+    pieces: ['Spirit angler headband','Spirit angler top','Spirit angler waders','Spirit angler boots'],
+    extra: {
+      matchAny: ['Spirit angler headband','Spirit angler top','Angler hat','Angler top'],
+      matchAll: [
+        ['Spirit angler headband','Angler hat'],
+        ['Spirit angler top','Angler top'],
+        ['Spirit angler waders','Angler waders'],
+        ['Spirit angler boots','Angler boots'],
+      ],
+    } }),
+  ...expandSet({ set: 'Prospector kit', source: 'Motherlode Mine', tags: ['Skilling & Minigames'], access: 4, img: 'Prospector helmet',
+    pieces: ['Prospector helmet','Prospector jacket','Prospector legs','Prospector boots'] }),
+  ...expandSet({ set: 'Smiths uniform', source: "Giants' Foundry", tags: ['Skilling & Minigames'], access: 5, img: 'Smiths tunic',
+    pieces: ['Smiths tunic','Smiths trousers','Smiths boots','Smiths gloves','Smiths hat'] }),
+  ...expandSet({ set: "Carpenter's outfit", source: 'Mahogany Homes', tags: ['Skilling & Minigames'], access: 4.5, img: "Carpenter's helmet",
+    pieces: ["Carpenter's helmet","Carpenter's shirt","Carpenter's trousers","Carpenter's boots"] }),
+  ...expandSet({ set: 'Raiments of the Eye', source: 'Guardians of the Rift', tags: ['Skilling & Minigames'], access: 6.5, img: 'Hat of the eye',
+    pieces: ['Hat of the eye','Robe top of the eye','Robe bottoms of the eye','Boots of the eye'] }),
+  ...expandSet({ set: "Farmers outfit", source: 'Tithe Farm', tags: ['Skilling & Minigames'], access: 4.5, img: "Farmer's strawhat",
+    pieces: ["Farmer's strawhat",'Farmers jacket','Farmers boro trousers','Farmers boots'] }),
+  ...expandSet({ set: 'Guild hunter outfit', source: 'Hunter Guild', tags: ['Skilling & Minigames'], access: 5, img: 'Guild hunter headwear',
+    pieces: ['Guild hunter headwear','Guild hunter top','Guild hunter legs','Guild hunter boots'] }),
+  ...expandSet({ set: 'Lumberjack outfit', source: 'Forestry', tags: ['Skilling & Minigames'], access: 5, img: 'Lumberjack hat',
+    pieces: ['Lumberjack hat','Lumberjack top','Lumberjack legs','Lumberjack boots'],
+    extra: {
+      matchAny: ['Forestry hat','Lumberjack hat','Forestry top','Lumberjack top'],
+      matchAll: [
+        ['Lumberjack hat','Forestry hat'],
+        ['Lumberjack top','Forestry top'],
+        ['Lumberjack legs','Forestry legs'],
+        ['Lumberjack boots','Forestry boots'],
+      ],
+    } }),
+  ...expandSet({ set: "Zealots robes", source: "Shades of Mort'ton", tags: ['Skilling & Minigames'], access: 5, img: "Zealot's helm",
+    pieces: ["Zealot's helm","Zealot's robe top","Zealot's robe bottom","Zealot's boots"] }),
 
   // ════════ WAVE 3 — QoL / UTILITY ════════
   { name: 'Ardougne cloak', tags: ['Diary Rewards'], access: 4.5,       src: 'Ardougne Diary', match: 'Ardougne cloak',
@@ -203,7 +240,7 @@ const KEY_ITEMS = [
   { name: 'Celestial ring', source: 'Volcanic Mine', tags: ['Skilling & Minigames'], access: 6.5,       src: 'Volcanic Mine', img: 'Celestial ring', matchAny: ['Celestial signet','Celestial ring (uncharged)','Celestial ring'] },
   { name: 'Expert mining gloves', source: 'Mining Guild', tags: ['Skilling & Minigames'], access: 5.5, src: 'Mining Guild (unidentified minerals)', match: 'Expert mining gloves' },
   { name: 'Log basket', source: 'Forestry', tags: ['Skilling & Minigames'], access: 3,           src: 'Forestry', img: 'Log basket', matchAny: ['Forestry basket','Log basket'] },
-  { name: 'Horn of plenty', source: 'Gryphons', source: 'Gryphons', tags: ['Slayer Unlocks'], access: 5,       src: 'Gryphons, Great Conch (51 Slayer + 45 Sailing + Troubled Tortugans)', match: 'Horn of plenty',
+  { name: 'Horn of plenty', source: 'Gryphons', tags: ['Slayer Unlocks'], access: 5,       src: 'Gryphons, Great Conch (51 Slayer + 45 Sailing + Troubled Tortugans)', match: 'Horn of plenty',
     hard: () => [ reqStat('Slayer', 51), reqStat('Sailing', 45), reqOther('Quest: Troubled Tortugans', hasQuest('Troubled Tortugans')) ] },
 
   // ════════ WAVE 4 — CAPABILITY TILES (access/ability, never "owned") ════════
