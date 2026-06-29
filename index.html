@@ -1631,9 +1631,14 @@ function renderKeyTabs() {
     return;
   }
 
-  // Count tiles per category for the little badge.
+  // Counts respect `show`: category badge counts items in that category's section
+  // (excludes board-only); All counts the big board (excludes section-only).
   const counts = {};
-  KEY_ITEMS.forEach(it => (it.tags || []).forEach(t => counts[t] = (counts[t] || 0) + 1));
+  KEY_ITEMS.forEach(it => {
+    if ((it.show || 'both') === 'board') return;
+    (it.tags || []).forEach(t => counts[t] = (counts[t] || 0) + 1);
+  });
+  const allCount = KEY_ITEMS.filter(it => (it.show || 'both') !== 'section').length;
 
   const tab = (label, value, count) => `
     <button class="ki-tab ${kiActiveCategory === value ? 'active' : ''}"
@@ -1642,7 +1647,7 @@ function renderKeyTabs() {
     </button>`;
 
   bar.innerHTML =
-    tab('All', null, KEY_ITEMS.length) +
+    tab('All', null, allCount) +
     KI_CATEGORIES.filter(c => counts[c]).map(c => tab(c, c, counts[c])).join('');
 }
 
@@ -1659,9 +1664,19 @@ function renderKeyItems() {
 
   const ordered = KEY_ITEMS
     .map((item, i) => ({ item, i }))
-    .filter(x => kiActiveSource
-      ? x.item.source === kiActiveSource
-      : (!kiActiveCategory || (x.item.tags || []).includes(kiActiveCategory)))
+    .filter(x => {
+      const show = x.item.show || 'both';
+      if (kiActiveSource) {
+        // Source drill-in: items of that source, excluding board-only ones.
+        return x.item.source === kiActiveSource && show !== 'board';
+      }
+      if (kiActiveCategory) {
+        // Category (sectioned) view: in-category, exclude board-only items.
+        return (x.item.tags || []).includes(kiActiveCategory) && show !== 'board';
+      }
+      // All big board: exclude section-only items.
+      return show !== 'section';
+    })
     .sort((a, b) => ((a.item.access ?? 99) - (b.item.access ?? 99)) || (a.i - b.i))
     .map(x => x.item);
 

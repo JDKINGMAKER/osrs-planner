@@ -138,8 +138,14 @@ const KEY_ITEMS = [
   // ════════ WAVE 2 — SKILLING OUTFITS (sets; icon follows owned variant or head) ════════
   { name: 'Graceful outfit', access: 3,      src: 'Agility (Marks of Grace)', img: 'Graceful hood',
     matchAll: ['Graceful hood','Graceful top','Graceful legs','Graceful gloves','Graceful boots','Graceful cape'] },
-  { name: 'Rogue equipment', source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3,      src: "Rogues' Den", img: 'Rogue mask',
+  { name: 'Rogue equipment', source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3,      src: "Rogues' Den", img: 'Rogue mask', show: 'board',
     matchAll: ['Rogue mask','Rogue top','Rogue trousers','Rogue gloves','Rogue boots'] },
+  // Rogues' Den individual pieces — section-only (set tile represents them on the big board).
+  { name: 'Rogue mask',     source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue mask' },
+  { name: 'Rogue top',      source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue top' },
+  { name: 'Rogue trousers', source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue trousers' },
+  { name: 'Rogue gloves',   source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue gloves' },
+  { name: 'Rogue boots',    source: 'Rogues\' Den', tags: ['Skilling & Minigames'], access: 3, show: 'section', match: 'Rogue boots' },
   { name: 'Anglers outfit', source: 'Tempoross', tags: ['Skilling & Minigames'], access: 4.5,       src: 'Fishing Trawler (base) / Tempoross (spirit upgrade)', img: 'Angler hat',
     // Icon prefers spirit pieces when owned (listed first). Head slot is "headband"
     // for spirit, "hat" for base — note the different name.
