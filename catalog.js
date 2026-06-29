@@ -35,16 +35,24 @@
  * own name (substring match). Piece tiles are show:'section'; set is show:'board'.
  */
 function expandSet({ set, source, tags, access, pieces, img, extra = {} }) {
+  // A piece is either a string (name) or an object {name, img?, match?} for
+  // cases where the wiki icon filename differs from the item name (e.g.
+  // "Farmers jacket" item but "Farmer's jacket.png" icon).
+  const norm = p => (typeof p === 'string' ? { name: p } : p);
+  const names = pieces.map(p => norm(p).name);
   const setTile = {
     name: set, source, tags, access, show: 'board',
-    img: img || pieces[0],
-    matchAll: pieces.slice(),
+    img: img || names[0],
+    matchAll: names.slice(),
     src: source,
     ...extra,
   };
-  const pieceTiles = pieces.map(p => ({
-    name: p, source, tags, access, show: 'section', match: p,
-  }));
+  const pieceTiles = pieces.map(p => {
+    const { name, img: pImg, match } = norm(p);
+    const tile = { name, source, tags, access, show: 'section', match: match || name };
+    if (pImg) tile.img = pImg;
+    return tile;
+  });
   return [setTile, ...pieceTiles];
 }
 
@@ -189,13 +197,18 @@ const KEY_ITEMS = [
   ...expandSet({ set: 'Prospector kit', source: 'Motherlode Mine', tags: ['Skilling & Minigames'], access: 4, img: 'Prospector helmet',
     pieces: ['Prospector helmet','Prospector jacket','Prospector legs','Prospector boots'] }),
   ...expandSet({ set: 'Smiths uniform', source: "Giants' Foundry", tags: ['Skilling & Minigames'], access: 5, img: 'Smiths tunic',
-    pieces: ['Smiths tunic','Smiths trousers','Smiths boots','Smiths gloves','Smiths hat'] }),
+    pieces: ['Smiths tunic','Smiths trousers','Smiths boots','Smiths gloves'] }),
   ...expandSet({ set: "Carpenter's outfit", source: 'Mahogany Homes', tags: ['Skilling & Minigames'], access: 4.5, img: "Carpenter's helmet",
     pieces: ["Carpenter's helmet","Carpenter's shirt","Carpenter's trousers","Carpenter's boots"] }),
   ...expandSet({ set: 'Raiments of the Eye', source: 'Guardians of the Rift', tags: ['Skilling & Minigames'], access: 6.5, img: 'Hat of the eye',
     pieces: ['Hat of the eye','Robe top of the eye','Robe bottoms of the eye','Boots of the eye'] }),
   ...expandSet({ set: "Farmers outfit", source: 'Tithe Farm', tags: ['Skilling & Minigames'], access: 4.5, img: "Farmer's strawhat",
-    pieces: ["Farmer's strawhat",'Farmers jacket','Farmers boro trousers','Farmers boots'] }),
+    pieces: [
+      "Farmer's strawhat",
+      { name: 'Farmers jacket', img: "Farmer's jacket" },
+      { name: 'Farmers boro trousers', img: "Farmer's boro trousers" },
+      { name: 'Farmers boots', img: "Farmer's boots" },
+    ] }),
   ...expandSet({ set: 'Guild hunter outfit', source: 'Hunter Guild', tags: ['Skilling & Minigames'], access: 5, img: 'Guild hunter headwear',
     pieces: ['Guild hunter headwear','Guild hunter top','Guild hunter legs','Guild hunter boots'] }),
   ...expandSet({ set: 'Lumberjack outfit', source: 'Forestry', tags: ['Skilling & Minigames'], access: 5, img: 'Lumberjack hat',
